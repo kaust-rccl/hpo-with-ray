@@ -19,7 +19,7 @@ fi
 export server_port=9121
 export dashboard_port=9122
 export redis_password=${SLURM_JOBID}
-head_node_ip=$(hostname -I | cut -d " " -f 2)
+export head_node_ip=$(hostname -I | cut -d " " -f 2)
 export ip_head=${head_node_ip}:${server_port}
 echo "${ip_head} ${redis_password}" > head_node_info
 
