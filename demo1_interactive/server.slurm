@@ -6,7 +6,7 @@
 #SBATCH --error=%x-%J.out
 #SBATCH --account=ibex-cs
 
-source ~/miniconda3/bin/activate ray
+source ~/miniconda3/bin/activate ray_demo
 
 export UCX_TLS=tcp,self
 export UCX_NET_DEVICES=ib0 
