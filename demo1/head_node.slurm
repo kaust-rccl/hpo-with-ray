@@ -6,7 +6,7 @@
 #SBATCH --tasks-per-node=1
 #SBATCH --cpus-per-task=4
 #SBATCH --time=00:30:00
-#SBATCH --account=ibex-cs
+###SBATCH --account=ibex-cs
 
 source ~/miniconda3/bin/activate ray_demo
 #Requested number of workers
@@ -34,8 +34,12 @@ for (( i=1; i<=${NUM_WORKERS}; i++ ))
    job_ids[$i]=$(sbatch -x $SLURM_NODELIST worker_node.slurm | cut -d " " -f 4)
  done 
 
+while [ ! -z $(squeue -n ray_worker -t PD -h -o %A) ]
+do
+	echo "Waiting for worker(s) to start"
+        sleep 30
+done
 sleep 20
-
 python -u hello_tune.py --num-samples=100 --max-concurrent-trials=20
 
 # Shutdown workers before the head node

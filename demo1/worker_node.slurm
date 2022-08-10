@@ -7,8 +7,7 @@
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=8
 #SBATCH --time=00:30:00
-#SBATCH --gpus=1
-#SBATCH --account=ibex-cs
+###SBATCH --account=ibex-cs
 
 source ~/miniconda3/bin/activate ray_demo
 

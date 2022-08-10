@@ -44,10 +44,10 @@ if __name__ == '__main__':
                         resources_per_trial={'cpu':1},
                         config={
                             "a": tune.uniform(0, 20),
-                            "b": tune.uniform(0,20),
+                            "b": tune.uniform(0, 20),
                             "max_concurrent_trials": args.max_concurrent_trials
                             },
-                        verbose=1,
+                        verbose=2,
                         local_dir=args.logs_dir)
     #Print best trial
     print("Best config is:", analysis.get_best_config(metric="score", mode="max"))
