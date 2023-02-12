@@ -6,9 +6,9 @@
 #SBATCH --tasks-per-node=1
 #SBATCH --cpus-per-task=4
 #SBATCH --time=00:30:00
-###SBATCH --account=ibex-cs
+#SBATCH --account=ibex-cs
 
-source ~/miniconda3/bin/activate ray_demo
+source /ibex/ai/home/shaima0d/miniconda3/bin/activate ray2_2
 #Requested number of workers
 if [ -z ${NUM_WORKERS} ] ; then
   NUM_WORKERS=1
@@ -16,17 +16,17 @@ else
   NUM_WORKERS=${NUM_WORKERS}
 fi
 
-export server_port=9121
-export dashboard_port=9122
+export server_port=$(python -c 'import socket; s=socket.socket(); s.bind(("", 0)); print(s.getsockname()[1]); s.close()')
+export dashboard_port=$(python -c 'import socket; s=socket.socket(); s.bind(("", 0)); print(s.getsockname()[1]); s.close()')
 export redis_password=${SLURM_JOBID}
 export head_node_ip=$(hostname -I | cut -d " " -f 2)
 export ip_head=${head_node_ip}:${server_port}
-echo "${ip_head} ${redis_password}" > head_node_info
+echo "${ip_head} ${redis_password} ${dashboard_port}" > head_node_info
 
 
 ray start --node-ip-address ${head_node_ip} --port ${server_port} --redis-password=${redis_password} --head  \
 	--dashboard-port ${dashboard_port} --dashboard-host=$HOSTNAME \
-        --num-cpus 1 --block &
+        --num-cpus ${SLURM_CPUS_PER_TASK} --block &
 sleep 20
 job_ids=()
 for (( i=1; i<=${NUM_WORKERS}; i++ ))
@@ -40,7 +40,8 @@ do
         sleep 30
 done
 sleep 20
-python -u hello_tune.py --num-samples=100 --max-concurrent-trials=20
+ray status --address ${ip_head} --redis_password ${redis_password}
+python -u hello_tune.py --num-samples=100 --max-concurrent-trials=40
 
 # Shutdown workers before the head node
 touch $PWD/shutdown.txt

@@ -7,20 +7,21 @@
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=8
 #SBATCH --time=00:30:00
-###SBATCH --account=ibex-cs
+#SBATCH --account=ibex-cs
 
-source ~/miniconda3/bin/activate ray_demo
+source /ibex/ai/home/shaima0d/miniconda3/bin/activate ray2_2
 
-export dashboard_port=9122
 
 export ip_head=$(cat ./head_node_info | cut -d " " -f 1)
 export head_node_ip=$(echo ${ip_head} | cut -d ":" -f 1)
 export redis_password=$(cat ./head_node_info | cut -d " " -f 2)
+export dashboard_port=$(cat ./head_node_info | cut -d " " -f 3)
+
 ray start --address ${ip_head}  --redis-password ${redis_password} \
 	--num-cpus ${SLURM_CPUS_PER_TASK} --block &
 sleep 20
 ray status --address ${ip_head} --redis_password ${redis_password}
-sleep 10
+#sleep 10
 
 # worker shutdown strategy
 if [ -f "shutdown.txt" ] ; then
