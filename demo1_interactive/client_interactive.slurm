@@ -7,25 +7,28 @@
 #SBATCH --error=%x-%J.out
 #SBATCH --account=ibex-cs
 
-source ~/miniconda3/bin/activate ray_demo
-export UCX_TLS=tcp,self
-export UCX_NET_DEVICES=ib0 
+source /ibex/ai/home/shaima0d/miniconda3/bin/activate ray2_2
 
-export dashboard_port=9122
 
-export jup_port=10101
+export jup_port=$(python -c 'import socket; s=socket.socket(); s.bind(("", 0)); print(s.getsockname()[1]); s.close()')
 export ip_head=$(cat ./head_node_info | cut -d " " -f 1)
 export head_node_ip=$(echo ${ip_head} | cut -d ":" -f 1)
 export redis_password=$(cat ./head_node_info | cut -d " " -f 2)
+export dashboard_port=$(cat ./head_node_info | cut -d " " -f 3)
+
+
 ray start --address ${ip_head}  --redis-password ${redis_password} \
 	--num-cpus ${SLURM_CPUS_PER_TASK} \
 	--block &
 sleep 20
 ray status --address ${ip_head} --redis_password ${redis_password}
-echo "For dashboard create SSH tunnel via the following \n
-ssh -L ${jup_port}:$(/bin/hostname):${jup_port} -L ${dashboard_port}:${head_node_ip}:${dashboard_port} ${USER}@ilogin.ibex.kaust.edu.sa"
 
-jupyter notebook --no-browser --port=${jup_port} --ip=$(hostname -s) --NotebookApp.token='' --NotebookApp.password=''
+echo "
+For dashboard create SSH tunnel via the following \n
+ssh -L localhost:${jup_port}:$(/bin/hostname):${jup_port} -L localhost:${dashboard_port}:${head_node_ip}:${dashboard_port} ${USER}@glogin.ibex.kaust.edu.sa
+"
+jupyter-lab --no-browser --port=${jup_port} --port-retries=0  --ip=$(/bin/hostname)
+
 ray stop
 server_jobID=$(squeue -t r -u $USER -n ray_server -O JobID -h)
 scancel $server_jobID

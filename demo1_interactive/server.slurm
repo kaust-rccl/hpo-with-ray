@@ -6,17 +6,16 @@
 #SBATCH --error=%x-%J.out
 #SBATCH --account=ibex-cs
 
-source ~/miniconda3/bin/activate ray_demo
+source /ibex/ai/home/shaima0d/miniconda3/bin/activate ray2_2
 
-export UCX_TLS=tcp,self
-export UCX_NET_DEVICES=ib0 
-
-export server_port=9121
-export dashboard_port=9122
+export server_port=$(python -c 'import socket; s=socket.socket(); s.bind(("", 0)); print(s.getsockname()[1]); s.close()')
+export dashboard_port=$(python -c 'import socket; s=socket.socket(); s.bind(("", 0)); print(s.getsockname()[1]); s.close()')
 export redis_password=${SLURM_JOBID}
+
+
 head_node_ip=$(hostname -I | cut -d " " -f 1)
 export ip_head=${head_node_ip}:${server_port}
-echo "${ip_head} ${redis_password}" > head_node_info
+echo "${ip_head} ${redis_password} ${dashboard_port}" > head_node_info
 
 
 ray start --node-ip-address ${head_node_ip} --port ${server_port} --redis-password=${redis_password} --head  \
