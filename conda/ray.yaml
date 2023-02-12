@@ -17,3 +17,4 @@ dependencies:
     - pip:
       - ray==2.2
       - ray[tune,rllib,serve]
+      - wandb
