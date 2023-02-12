@@ -14,6 +14,7 @@ dependencies:
     - torchvision
     - grpcio=1.43.0
     - tensorboard
+    - jupyterlab
     - pip:
       - ray==2.2
       - ray[tune,rllib,serve]
