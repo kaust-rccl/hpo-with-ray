@@ -8,7 +8,7 @@
 #SBATCH --time=00:30:00
 #SBATCH --account=ibex-cs
 
-source ~/miniconda3/bin/activate ray_demo
+source /ibex/ai/home/shaima0d/miniconda3/bin/activate ray2_2
 #Requested number of workers
 if [ -z ${NUM_WORKERS} ] ; then
   NUM_WORKERS=1
@@ -56,9 +56,8 @@ done
 
 python -u ray_mnist_pytorch_pbt.py --use-gpu \
           --cpus-per-trial=4 --gpus-per-trial=1 \
-          --num-samples=50 \
+          --num-samples=100 \
           --max-concurrent-trials=32 
-#          --resume --logs-dir=/ibex/scratch/shaima0d/impact_project_2020/ray_cluster/KSL_hpo_tutorial/demo3/logs/#####
           
 
 

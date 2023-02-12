@@ -11,7 +11,8 @@ from torchvision import datasets, transforms
 
 import ray
 from ray import tune
-from ray.tune.schedulers import AsyncHyperBandScheduler
+from ray.tune.schedulers import PopulationBasedTraining
+import numpy as np
 
 # Change these values if you want the training to run quicker or slower.
 EPOCH_SIZE = 512
@@ -90,6 +91,7 @@ def get_data_loaders():
 
 
 def train_mnist(config, checkpoint_dir=None):
+    epoch = 0
     use_cuda = config.get("use_gpu") and torch.cuda.is_available()
     device = torch.device("cuda" if use_cuda else "cpu")
     train_loader, test_loader = get_data_loaders()
@@ -103,25 +105,31 @@ def train_mnist(config, checkpoint_dir=None):
     )
     
     if checkpoint_dir:
-        checkpoint = os.path.join(checkpoint_dir,'checkpoint')
-        model_state,optimizer_state = torch.load(checkpoint)
-        model.load_state_dict(model_state)
-        optimizer.load_state_dict(optimizer_state)
+        chkpt_path = os.path.join(checkpoint_dir,'checkpoint')
+        checkpoint = torch.load(chkpt_path)
+        model.load_state_dict(checkpoint['model.state_dict'])
+        epoch = checkpoint['epoch']
+        
+        
 
-    #while True:
-    for epoch in range(10):
+    while True:
         train(model, optimizer, train_loader, device)
         acc = test(model, test_loader, device)  
-       
-        with tune.checkpoint_dir(step=epoch) as checkpoint_dir:
-            path= os.path.join(checkpoint_dir,'checkpoint')
-            torch.save(
-                (model.state_dict(),optimizer.state_dict()),
-                        path
-                        )    
-            
-        # Set this to run Tune.
+        # Write checkpoint every 5th epoch
+        if epoch % 4 == 0:
+            with tune.checkpoint_dir(step=epoch) as checkpoint_dir:
+                path= os.path.join(checkpoint_dir,'checkpoint')
+                
+                torch.save(
+                    {"epoch": epoch,
+                     "model.state_dict": model.state_dict(),
+                     "mean_accuracy": acc,
+                     }, path
+                    )    
+                # with SGD we don't need to keep the opitmizer state because it doesn't depend on the previous state
+        epoch +=1
         tune.report(mean_accuracy=acc)
+        
         
 def stopper(trial_id, result):
     return (result["mean_accuracy"] > 0.8) or ( (result["training_iteration"] > 6) and (result["mean_accuracy"] < 0.5) )
@@ -149,15 +157,29 @@ if __name__ == "__main__":
     args = parser.parse_args()   
     os.makedirs(args.logs_dir,exist_ok=True)
     
-    ray.init(address=os.getenv('ip_head'),_redis_password=os.getenv('redis_password'))
+    ray.init(address=os.environ["ip_head"], _node_ip_address=os.environ["head_node_ip"],_redis_password=os.getenv('redis_password'))
+    
+    # Define scheduler
+    pbt_schd = PopulationBasedTraining(
+        time_attr="training_iteration",
+        perturbation_interval=5,
+        hyperparam_mutations={
+            # distribution for resampling
+            "lr": lambda: np.random.uniform(0.01, 1.0),
+            # allow perturbations within this set of categorical values
+            "momentum": [0.8, 0.9, 0.99],
+        },
+    )
 
     
     analysis = tune.run(
         train_mnist, 
         metric="mean_accuracy",
         mode="max",
-        name="tune_demo",
-
+        name="tune_demo_pbt",
+        scheduler = pbt_schd,
+        reuse_actors=True,
+        
 
         resources_per_trial={"cpu":args.cpus_per_trial,
                              "gpu": args.gpus_per_trial,  # set this for GPUs
@@ -165,7 +187,8 @@ if __name__ == "__main__":
         config={"lr": tune.uniform(0.01,1.0),
                 "momentum": tune.uniform(0.1,0.9),
                 "use_gpu": args.use_gpu,
-                         },
+                },
+        
         stop=stopper,
                  #{ "mean_accuracy": 0.8 },
         fail_fast=True,
@@ -177,10 +200,8 @@ if __name__ == "__main__":
         verbose=2,
         local_dir=args.logs_dir, # relocates the log director from $HOME/ray_cluster/...
         log_to_file=True,        # writes stdout and stderr files to each trial's log directory
-         
         sync_config=tune.SyncConfig(syncer=None),  # since we are using share directory for checkpoints
-        keep_checkpoints_num=2,                    # keep a maximum of 5 checkpoints
-        checkpoint_score_attr="mean_accuracy", # keep the (5) checkpoints with best mean_accuray in descending order
     )
 
-    print("Best config is:", analysis.best_config)
+    print("Best config is: ", analysis.best_config)
+    print("Best trial: ", analysis.best_trial)

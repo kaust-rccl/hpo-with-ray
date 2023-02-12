@@ -10,7 +10,7 @@
 #SBATCH --gpus=4
 #SBATCH --account=ibex-cs
 
-source ~/miniconda3/bin/activate ray_demo
+source /ibex/ai/home/shaima0d/miniconda3/bin/activate ray2_2
 
 export NUM_CPUS_PER_NODE=${SLURM_CPUS_PER_TASK}
 export NUM_GPUS_PER_NODE=4
