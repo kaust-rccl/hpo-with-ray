@@ -1,0 +1,78 @@
+#!/bin/bash
+#SBATCH --job-name=ray_head_demo4
+#SBATCH --output=%x-%j.out
+#SBATCH --error=%x-%j.out
+#SBATCH --ntasks=1
+#SBATCH --tasks-per-node=1
+#SBATCH --cpus-per-task=4
+#SBATCH --time=00:30:00
+#SBATCH --account=ibex-cs
+
+
+source /ibex/ai/home/shaima0d/miniconda3/bin/activate ray2_2
+#Requested number of workers
+if [ -z ${NUM_WORKERS} ] ; then
+  NUM_WORKERS=1
+else
+  NUM_WORKERS=${NUM_WORKERS}
+fi
+
+
+export EXPERIMENT=exp-${SLURM_JOBID}
+
+export server_port=$(python -c 'import socket; s=socket.socket(); s.bind(("", 0)); print(s.getsockname()[1]); s.close()')
+export dashboard_port=$(python -c 'import socket; s=socket.socket(); s.bind(("", 0)); print(s.getsockname()[1]); s.close()')
+export tensorboard_port=$(python -c 'import socket; s=socket.socket(); s.bind(("", 0)); print(s.getsockname()[1]); s.close()')
+export TB_TMPDIR=$PWD/tboard/${SLURM_JOBID}
+mkdir -p ${TB_TMPDIR}
+
+export redis_password=${SLURM_JOBID}
+export head_node_ip=$(hostname -I | cut -d " " -f 2)
+export ip_head=${head_node_ip}:${server_port}
+echo "${ip_head} ${redis_password}" > head_node_info
+
+echo "
+Connect to dashboard by creating SSH tunnels. Copy the following command in a new terminal
+and connect to localhost via your browser.
+ssh -L ${dashboard_port}:localhost:${dashboard_port} -L ${tensorboard_port}:localhost:${tensorboard_port} ${USER}@${HOSTNAME}.ibex.kaust.edu.sa
+"
+
+ray start --node-ip-address ${head_node_ip} --port ${server_port} --redis-password=${redis_password} --head  \
+	--dashboard-port ${dashboard_port} --dashboard-host=127.0.0.1 \
+        --num-cpus 1 --block &
+tensorboard --logdir=${PWD}/logs/${SLURM_JOBID} --port=${tensorboard_port} & 
+sleep 20
+
+job_ids=()
+for (( i=1; i<=${NUM_WORKERS}; i++ ))
+ do
+   job_ids[$i]=$(sbatch -x $SLURM_NODELIST worker_node.slurm | cut -d " " -f 4)
+ done 
+
+while [ ! -z $(squeue -n ray_worker_demo4 -t PD -h -o %A) ]
+do
+	echo "Waiting for worker(s) to start"
+        sleep 20
+done
+
+source ./wandb_setup.sh
+python -u ray_mnist_pytorch_wandb.py --use-gpu \
+          --cpus-per-trial=4 --gpus-per-trial=1 \
+          --num-samples=10 \
+          --max-concurrent-trials=8
+
+          
+
+
+# Shutdown workers before the head node
+touch $PWD/shutdown.txt
+sleep 20
+echo " Stopping ray on Head node: $(/bin/hostname)"
+ray stop
+rm $PWD/shutdown.txt
+
+echo "Starting to sync offline results to Wandb project cloud project"
+wandb online
+cd logs/${EXPERIMENT}/wandb_runs
+echo "Now in $PWD"
+wandb sync --include-offline --sync-all
