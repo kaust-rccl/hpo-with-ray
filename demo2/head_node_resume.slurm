@@ -60,7 +60,8 @@ done
 python -u ray_mnist_pytorch.py --use-gpu \
           --cpus-per-trial=4 --gpus-per-trial=1 \
           --num-samples=50 \
-          --max-concurrent-trials=32 
+          --max-concurrent-trials=32 \
+          --resume --logs-dir=${PWD}/logs/${RESUME_JOBID}
           
 
 

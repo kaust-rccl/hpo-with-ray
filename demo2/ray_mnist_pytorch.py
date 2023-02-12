@@ -147,7 +147,7 @@ if __name__ == "__main__":
     args = parser.parse_args()   
     os.makedirs(args.logs_dir,exist_ok=True)
     
-    ray.init(address=os.getenv('ip_head'),_redis_password=os.getenv('redis_password'))
+    ray.init(address=os.environ["ip_head"], _node_ip_address=os.environ["head_node_ip"],_redis_password=os.getenv('redis_password'))
 
     
     analysis = tune.run(
