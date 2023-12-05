@@ -19,3 +19,4 @@ dependencies:
       - ray==2.2
       - ray[tune,rllib,serve]
       - wandb
+      - pydantic==1.10.13
