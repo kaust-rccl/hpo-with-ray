@@ -5,11 +5,14 @@
 #SBATCH --ntasks=1
 #SBATCH --tasks-per-node=1
 #SBATCH --nodes=1
-#SBATCH --cpus-per-task=8
-#SBATCH --time=00:30:00
-#SBATCH --account=ibex-cs
+#SBATCH --cpus-per-task=16
+#SBATCH --time=00:10:00
+#SBATCH --reservation=DS-TRAINING
+#SBATCH --gpus=4
 
-source /ibex/ai/home/shaima0d/miniconda3/bin/activate ray2_2
+module load dl
+module load pytorch
+module load ray/2.2.0
 
 
 export ip_head=$(cat ./head_node_info | cut -d " " -f 1)

@@ -4,11 +4,14 @@
 #SBATCH --error=%x-%j.out
 #SBATCH --ntasks=1
 #SBATCH --tasks-per-node=1
-#SBATCH --cpus-per-task=4
-#SBATCH --time=00:30:00
-#SBATCH --account=ibex-cs
+#SBATCH --cpus-per-task=2
+#SBATCH --time=00:10:00
+#SBATCH --reservation=DS-TRAINING
 
-source /ibex/ai/home/shaima0d/miniconda3/bin/activate ray2_2
+module load dl
+module load pytorch
+module load ray/2.2.0
+
 #Requested number of workers
 if [ -z ${NUM_WORKERS} ] ; then
   NUM_WORKERS=1
