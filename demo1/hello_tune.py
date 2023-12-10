@@ -41,7 +41,8 @@ if __name__ == '__main__':
     
     analysis = tune.run(trainable,
                         num_samples=args.num_samples,
-                        resources_per_trial={'cpu':1},
+                        resources_per_trial={'cpu':1,
+                                             },
                         config={
                             "a": tune.uniform(0, 20),
                             "b": tune.uniform(0, 20),

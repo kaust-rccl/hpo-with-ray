@@ -7,6 +7,7 @@
 #SBATCH --cpus-per-task=2
 #SBATCH --time=00:10:00
 #SBATCH --reservation=DS-TRAINING
+#SBATCH -p debug
 
 module load dl
 module load pytorch
@@ -44,7 +45,7 @@ do
 done
 sleep 20
 ray status --address ${ip_head} --redis_password ${redis_password}
-python -u hello_tune.py --num-samples=100 --max-concurrent-trials=40
+python -u hello_tune.py --num-samples=50 --max-concurrent-trials=20
 
 # Shutdown workers before the head node
 touch $PWD/shutdown.txt
