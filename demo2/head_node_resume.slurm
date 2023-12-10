@@ -6,7 +6,8 @@
 #SBATCH --tasks-per-node=1
 #SBATCH --cpus-per-task=4
 #SBATCH --time=00:30:00
-#SBATCH --account=ibex-cs
+#SBATCH --reservation=DS-TRAINING
+#SBATCH -p debug
 
 source /ibex/ai/home/shaima0d/miniconda3/bin/activate ray2_2
 #Requested number of workers
@@ -21,7 +22,7 @@ fi
 export server_port=$(python -c 'import socket; s=socket.socket(); s.bind(("", 0)); print(s.getsockname()[1]); s.close()')
 export dashboard_port=$(python -c 'import socket; s=socket.socket(); s.bind(("", 0)); print(s.getsockname()[1]); s.close()')
 export tensorboard_port=$(python -c 'import socket; s=socket.socket(); s.bind(("", 0)); print(s.getsockname()[1]); s.close()')
-export node=$(/bin/hostanme -s)
+export node=$(/bin/hostname -s)
 echo "
 Connect to dashboard by creating SSH tunnels. Copy the following command in a new terminal
 and connect to localhost via your browser.

@@ -6,16 +6,20 @@
 #SBATCH --tasks-per-node=1
 #SBATCH --cpus-per-task=4
 #SBATCH --time=00:30:00
-#SBATCH --account=ibex-cs
+#SBATCH --reservation=DS-TRAINING
+#SBATCH -p debug
 
-source /ibex/ai/home/shaima0d/miniconda3/bin/activate ray2_2
+module load dl
+module load pytorch
+module load ray/2.2.0
+
+
 #Requested number of workers
 if [ -z ${NUM_WORKERS} ] ; then
   NUM_WORKERS=1
 else
   NUM_WORKERS=${NUM_WORKERS}
 fi
-
 
 
 export server_port=$(python -c 'import socket; s=socket.socket(); s.bind(("", 0)); print(s.getsockname()[1]); s.close()')
@@ -59,7 +63,7 @@ done
 
 python -u ray_mnist_pytorch.py --use-gpu \
           --cpus-per-trial=4 --gpus-per-trial=1 \
-          --num-samples=50 \
+          --num-samples=200 \
           --max-concurrent-trials=32 
           
 
