@@ -6,9 +6,14 @@
 #SBATCH --tasks-per-node=1
 #SBATCH --cpus-per-task=4
 #SBATCH --time=00:30:00
-#SBATCH --account=ibex-cs
+#SBATCH --reservation=DS-TRAINING
+#SBATCH -p debug
 
-source /ibex/ai/home/shaima0d/miniconda3/bin/activate ray2_2
+module load dl
+module load pytorch
+module load ray/2.2.0
+
+
 #Requested number of workers
 if [ -z ${NUM_WORKERS} ] ; then
   NUM_WORKERS=1
@@ -17,22 +22,25 @@ else
 fi
 
 
+
+export server_port=$(python -c 'import socket; s=socket.socket(); s.bind(("", 0)); print(s.getsockname()[1]); s.close()')
+export dashboard_port=$(python -c 'import socket; s=socket.socket(); s.bind(("", 0)); print(s.getsockname()[1]); s.close()')
+export tensorboard_port=$(python -c 'import socket; s=socket.socket(); s.bind(("", 0)); print(s.getsockname()[1]); s.close()')
+export node=$(/bin/hostanme -s)
 echo "
 Connect to dashboard by creating SSH tunnels. Copy the following command in a new terminal
 and connect to localhost via your browser.
-ssh -L 9122:localhost:9122 -L 9123:localhost:9123 ${USER}@${HOSTNAME}.ibex.kaust.edu.sa
+ssh -L localhost:${dashboard_port}:${node}:${dashboard_port} -L localhost:${tensorboard_port}:${node}:${tensorboard_port} ${USER}@glogin.ibex.kaust.edu.sa
 "
 
-export server_port=9121
-export dashboard_port=9122
-export tensorboard_port=9123
+
 export TB_TMPDIR=$PWD/tboard/${SLURM_JOBID}
 mkdir -p ${TB_TMPDIR}
 
 export redis_password=${SLURM_JOBID}
 export head_node_ip=$(hostname -I | cut -d " " -f 2)
 export ip_head=${head_node_ip}:${server_port}
-echo "${ip_head} ${redis_password}" > head_node_info
+echo "${ip_head} ${redis_password} ${dashboard_port}" > head_node_info
 
 
 ray start --node-ip-address ${head_node_ip} --port ${server_port} --redis-password=${redis_password} --head  \
