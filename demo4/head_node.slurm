@@ -4,12 +4,16 @@
 #SBATCH --error=%x-%j.out
 #SBATCH --ntasks=1
 #SBATCH --tasks-per-node=1
-#SBATCH --cpus-per-task=4
+#SBATCH --cpus-per-task=2
 #SBATCH --time=00:30:00
-#SBATCH --account=ibex-cs
+#SBATCH --reservation=DS-TRAINING
+#SBATCH -p debug
+
+module load dl
+module load pytorch
+module load ray/2.2.0
 
 
-source /ibex/ai/home/shaima0d/miniconda3/bin/activate ray2_2
 #Requested number of workers
 if [ -z ${NUM_WORKERS} ] ; then
   NUM_WORKERS=1
@@ -18,24 +22,26 @@ else
 fi
 
 
-export EXPERIMENT=exp-${SLURM_JOBID}
 
 export server_port=$(python -c 'import socket; s=socket.socket(); s.bind(("", 0)); print(s.getsockname()[1]); s.close()')
 export dashboard_port=$(python -c 'import socket; s=socket.socket(); s.bind(("", 0)); print(s.getsockname()[1]); s.close()')
 export tensorboard_port=$(python -c 'import socket; s=socket.socket(); s.bind(("", 0)); print(s.getsockname()[1]); s.close()')
+export node=$(/bin/hostname -s)
+echo "
+Connect to dashboard by creating SSH tunnels. Copy the following command in a new terminal
+and connect to localhost via your browser.
+ssh -L localhost:${dashboard_port}:${node}:${dashboard_port} -L localhost:${tensorboard_port}:${node}:${tensorboard_port} ${USER}@glogin.ibex.kaust.edu.sa
+"
+
+
 export TB_TMPDIR=$PWD/tboard/${SLURM_JOBID}
 mkdir -p ${TB_TMPDIR}
 
 export redis_password=${SLURM_JOBID}
 export head_node_ip=$(hostname -I | cut -d " " -f 2)
 export ip_head=${head_node_ip}:${server_port}
-echo "${ip_head} ${redis_password}" > head_node_info
+echo "${ip_head} ${redis_password} ${dashboard_port}" > head_node_info
 
-echo "
-Connect to dashboard by creating SSH tunnels. Copy the following command in a new terminal
-and connect to localhost via your browser.
-ssh -L ${dashboard_port}:localhost:${dashboard_port} -L ${tensorboard_port}:localhost:${tensorboard_port} ${USER}@${HOSTNAME}.ibex.kaust.edu.sa
-"
 
 ray start --node-ip-address ${head_node_ip} --port ${server_port} --redis-password=${redis_password} --head  \
 	--dashboard-port ${dashboard_port} --dashboard-host=127.0.0.1 \
