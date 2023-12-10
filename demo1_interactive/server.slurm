@@ -4,9 +4,13 @@
 #SBATCH --job-name=ray_server
 #SBATCH --output=%x-%J.out
 #SBATCH --error=%x-%J.out
-#SBATCH --account=ibex-cs
+#SBATCH --reservation=DS-TRAINING
+#SBATCH -p debug
 
-source /ibex/ai/home/shaima0d/miniconda3/bin/activate ray2_2
+
+module load dl
+module load pytorch
+module load ray/2.2.0
 
 export server_port=$(python -c 'import socket; s=socket.socket(); s.bind(("", 0)); print(s.getsockname()[1]); s.close()')
 export dashboard_port=$(python -c 'import socket; s=socket.socket(); s.bind(("", 0)); print(s.getsockname()[1]); s.close()')

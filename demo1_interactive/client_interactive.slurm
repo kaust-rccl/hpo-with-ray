@@ -1,14 +1,16 @@
 #!/bin/bash
 
-#SBATCH --time=02:00:00
-#SBATCH --cpus-per-task=4
+#SBATCH --time=00:30:00
+#SBATCH --cpus-per-task=8
 #SBATCH --job-name=ray_client
 #SBATCH --output=%x-%J.out
 #SBATCH --error=%x-%J.out
-#SBATCH --account=ibex-cs
+#SBATCH --reservation=DS-TRAINING
+#SBATCH -p debug
 
-source /ibex/ai/home/shaima0d/miniconda3/bin/activate ray2_2
-
+module load dl
+module load pytorch
+module load ray/2.2.0
 
 export jup_port=$(python -c 'import socket; s=socket.socket(); s.bind(("", 0)); print(s.getsockname()[1]); s.close()')
 export ip_head=$(cat ./head_node_info | cut -d " " -f 1)
