@@ -8,7 +8,7 @@
 #SBATCH --cpus-per-task=16
 #SBATCH --time=00:30:00
 #SBATCH --gpus=4
-#SBATCH --account=ibex-cs
+#SBATCH --reservation=DS-TRAINING
 
 source /ibex/ai/home/shaima0d/miniconda3/bin/activate ray2_2
 
