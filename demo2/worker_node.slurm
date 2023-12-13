@@ -10,7 +10,9 @@
 #SBATCH --gpus=4
 #SBATCH --reservation=DS-TRAINING
 
-source /ibex/ai/home/shaima0d/miniconda3/bin/activate ray2_2
+module load dl
+module load pytorch
+module load ray/2.2.0
 
 export NUM_CPUS_PER_NODE=${SLURM_CPUS_PER_TASK}
 export NUM_GPUS_PER_NODE=4
