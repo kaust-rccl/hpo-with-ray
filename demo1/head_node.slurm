@@ -7,7 +7,6 @@
 #SBATCH --cpus-per-task=2
 #SBATCH --time=00:10:00
 #SBATCH --reservation=DS-TRAINING
-#SBATCH -p debug
 
 module load dl
 module load pytorch

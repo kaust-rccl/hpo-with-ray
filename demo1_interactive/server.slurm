@@ -5,7 +5,6 @@
 #SBATCH --output=%x-%J.out
 #SBATCH --error=%x-%J.out
 #SBATCH --reservation=DS-TRAINING
-#SBATCH -p debug
 
 
 module load dl
