@@ -9,6 +9,8 @@
 #SBATCH --constraint=v100                     # Only schedule on V100 partition
 #SBATCH --mem=256G                            # System RAM reservation
 
+
+# ──────────────────────────── PATHS SETUP ─────────────────────────────
 CURRENT_DIR=$(pwd)
 cd "$CURRENT_DIR/../../"
 
@@ -52,6 +54,10 @@ for lr in "${LRs[@]}"; do
     done
   done
 done
+
+# ──────────────────────────── LOGS PARSING ──────────────────────────────────
+
+python "$SCRIPT_DIR/logs_parser.py" --logs "$CURRENT_DIR/logs/${SLURM_JOB_NAME}-${SLURM_JOB_ID}.out" --out "$CURRENT_DIR/logs/${SLURM_JOB_NAME}-${SLURM_JOB_ID}.csv"
 
 # NOTE:
 # • Each fine-tune run is completely independent; checkpoints go to
