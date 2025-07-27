@@ -1,206 +1,250 @@
-"""
--------------------------------------------------
-Fine‑tune **BLOOM‑560M** on the SQuAD v1.1 dataset with **Ray-Tune** +
-Optuna hyper‑parameter search and ASHA early‑stopping.
+import os, re, string, torch, numpy as np
+from datasets import load_dataset
 
-Key features
-============
-* Hugging-Face **Trainer** API – supports fp16 + DeepSpeed.
-* **TorchTrainer** – handles multi‑GPU workers.
-* **OptunaSearch** – search over LR, BS, WD.
-* **ASHA** scheduler – early‑terminate poor trials, fits cluster budget.
-"""
-
-# ───────────────────────────── Imports ──────────────────────────────
-# Std‑lib & scientific
-import os, re, string, sys, time, json
-from typing import Dict, Any, Tuple
-
-import numpy as np
-import torch
-from datasets import load_dataset, disable_caching  # HF Datasets
-from transformers import (
-    BloomForCausalLM,
-    BloomTokenizerFast,
-    TrainingArguments,
-    Trainer,
-    DataCollatorForSeq2Seq,
-)
-
-# Ray-AI Runtime
+from transformers import (BloomForCausalLM, BloomTokenizerFast,
+                          TrainingArguments, Trainer, DataCollatorForSeq2Seq)
 import ray
 from ray import tune
-from ray.tune.search.optuna import OptunaSearch
 from ray.train.torch import TorchTrainer
-from ray.train import ScalingConfig, RunConfig, CheckpointConfig, report
+from ray.train import ScalingConfig, RunConfig, CheckpointConfig
 import ray.train.huggingface.transformers as rhf
+import sys
+from datasets import disable_caching
+from ray.tune.search.optuna import OptunaSearch
+from ray.train.huggingface.transformers import RayTrainReportCallback
+from transformers import TrainerCallback
+from ray.train import report
 
-# ─────────────────────────── Configuration ──────────────────────────
-MODEL_NAME = "bigscience/bloomz-560m"  # baseline checkpoint to fine‑tune
-MAX_LEN   = 512                       # token length for both prompt & answer
+MODEL_NAME = "bigscience/bloomz-560m"  # Base model for fine-tuning
 
-# ───────────────────── Dataset Loading & Preprocessing ──────────────
 
-def load_squad() -> Tuple[Dict[str, Any], BloomTokenizerFast]:
-    """
-    Load **SQuADv1.1** and tokenize for generative QA.
-
-    Returns
-    -------
-    tokenized_dataset : Dict[str, HF Dataset]
-        Contains "train" and "validation" splits with token IDs & labels.
-    tokenizer : BloomTokenizerFast
-        Tokenizer used for both training and decoding.
-    """
+def load_squad():
+    """Loads and preprocesses the SQuAD dataset for generative QA."""
     tokenizer = BloomTokenizerFast.from_pretrained(MODEL_NAME)
-    dataset   = load_dataset("squad")  # ~85K train / 10K dev rows
+    dataset = load_dataset("squad")
 
-    def _preprocess(examples):
-        """Convert (question, context, answer) → model input/labels."""
-        tokenizer.padding_side = "right"  # allow left‑padding for causal LM
+    def preprocess_function(examples):
+        tokenizer.padding_side = "right"
+        # Combine question and context into a single prompt for generation
+        inputs = ["Question: " + q + " Context: " + c + " Answer:"
+                  for q, c in zip(examples["question"], examples["context"])]
+        # Use the first available answer or "No Answer" if empty
+        answers = [a["text"][0] if len(a["text"]) > 0 else "No Answer" for a in examples["answers"]]
 
-        # Prompt format expected by BLOOM for QA generation
-        inputs = [f"Question: {q} Context: {c} Answer:" for q, c in zip(examples["question"], examples["context"])]
-
-        # Use first ground‑truth answer; if none, mark as "No Answer"
-        answers = [a["text"][0] if a["text"] else "No Answer" for a in examples["answers"]]
-
-        model_inputs = tokenizer(inputs, padding="max_length", truncation=True, max_length=MAX_LEN)
-        labels       = tokenizer(answers, padding="max_length", truncation=True, max_length=MAX_LEN)
-
-        # Replace PAD tokens in labels with ‑100 so HF Trainer ignores them in loss
+        # Tokenize input and labels (answers)
+        model_inputs = tokenizer(inputs, truncation=True, padding="max_length", max_length=512)
+        labels = tokenizer(answers, truncation=True, padding="max_length", max_length=512)
+        # Replace padding tokens in labels with -100 so they are ignored in loss computation
         labels["input_ids"] = [
-            [tok if tok != tokenizer.pad_token_id else -100 for tok in seq]
-            for seq in labels["input_ids"]
+            [(token if token != tokenizer.pad_token_id else -100) for token in label]
+            for label in labels["input_ids"]
         ]
         model_inputs["labels"] = labels["input_ids"]
         return model_inputs
 
-    tokenized_dataset = dataset.map(_preprocess, batched=True, remove_columns=dataset["train"].column_names)
+    tokenized_dataset = dataset.map(preprocess_function, batched=True)
     return tokenized_dataset, tokenizer
 
-# ───────────────────── String‑normalisation Helpers ──────────────────
 
-def normalize_answer(s: str) -> str:
-    """Lowercase + strip punctuation, articles, and extra whitespace."""
-    remove_articles  = lambda txt: re.sub(r"\b(a|an|the)\b", " ", txt)
-    white_space_fix  = lambda txt: " ".join(txt.split())
-    remove_punc      = lambda txt: "".join(ch for ch in txt if ch not in set(string.punctuation))
-    return white_space_fix(remove_articles(remove_punc(s.lower())))
+def normalize_answer(s):
+    """Normalize strings for EM/F1 evaluation (lowercase, remove punctuation, articles, extra spaces)."""
+
+    def remove_articles(text):
+        return re.sub(r'\b(a|an|the)\b', ' ', text)
+
+    def white_space_fix(text):
+        return " ".join(text.split())
+
+    def remove_punc(text):
+        return "".join(ch for ch in text if ch not in set(string.punctuation))
+
+    def lower(text):
+        return text.lower()
+
+    return white_space_fix(remove_articles(remove_punc(lower(s))))
 
 
-def compute_em_and_f1(predicted: str, ground_truth: str) -> Tuple[int, float]:
-    """Exact‑Match (EM) and F1 for a single QA pair."""
-    pred, gt = normalize_answer(predicted), normalize_answer(ground_truth)
-    em  = int(pred == gt)
-    p_toks, g_toks = pred.split(), gt.split()
-    common         = set(p_toks) & set(g_toks)
-    if not common:
+def compute_em_and_f1(predicted, ground_truth):
+    """Compute Exact Match (EM) and F1 scores for one prediction vs ground truth."""
+    pred = normalize_answer(predicted)
+    gt = normalize_answer(ground_truth)
+
+    em = int(pred == gt)
+    pred_tokens = pred.split()
+    gt_tokens = gt.split()
+    common = set(pred_tokens) & set(gt_tokens)
+    if len(common) == 0:
         return em, 0.0
-    precision = len(common) / len(p_toks)
-    recall    = len(common) / len(g_toks)
-    f1        = 2 * precision * recall / (precision + recall)
+    precision = len(common) / len(pred_tokens)
+    recall = len(common) / len(gt_tokens)
+    f1 = (2 * precision * recall) / (precision + recall)
     return em, f1
 
-# ───────────────────────── Evaluation Utility ────────────────────────
 
-def evaluate_model(trainer: Trainer, dataset, tokenizer):
-    """Run generation on *dataset* and compute average EM / F1."""
-    em_scores, f1_scores = [], []
-    for ex in dataset:
-        input_ids      = torch.tensor([ex["input_ids"]]).to(trainer.args.device)
-        attn_mask      = torch.tensor([ex["attention_mask"]]).to(trainer.args.device)
-        outputs        = trainer.model.generate(input_ids, attention_mask=attn_mask, max_new_tokens=50)
+def evaluate_model(trainer, dataset, tokenizer):
+    """Custom evaluation loop for the validation split, computing EM and F1 scores."""
+    em_scores = []
+    f1_scores = []
+
+    model = trainer.model
+    model.eval()  # Switch to eval mode
+
+    for example in dataset:
+        # Prepare input tensors
+        input_ids = torch.tensor([example["input_ids"]]).to(trainer.args.device)
+        attention_mask = torch.tensor([example["attention_mask"]]).to(trainer.args.device)
+
+        # Generate answer (greedy decoding, max 50 tokens)
+        outputs = trainer.model.generate(
+            input_ids,
+            attention_mask=attention_mask,
+            max_new_tokens=50,
+            do_sample=False
+        )
+
         generated_text = tokenizer.decode(outputs[0], skip_special_tokens=True)
-        # Extract answer substring
-        gen_ans = generated_text.split("Answer:")[-1].strip() if "Answer:" in generated_text else generated_text.strip()
-        ref_ans = tokenizer.decode([tok for tok in ex["labels"] if tok != -100], skip_special_tokens=True).strip()
-        em, f1  = compute_em_and_f1(gen_ans, ref_ans)
-        em_scores.append(em); f1_scores.append(f1)
-    return {"exact_match": np.mean(em_scores), "f1": np.mean(f1_scores)}
 
-# ───────────────────────── Train loop (per worker) ────────────────────
+        # Extract answer after "Answer:" if present
+        if "Answer:" in generated_text:
+            generated_answer = generated_text.split("Answer:")[-1].strip()
+        else:
+            generated_answer = generated_text.strip()
 
-def train_loop_per_worker(config: Dict[str, Any]):
-    """Executed **inside each Ray worker**. Builds HF Trainer and trains."""
-    # Load a *subset* of SQuAD to keep trials quick
+        # Convert labels back to string (ignoring -100)
+        reference_answer = tokenizer.decode(
+            [token for token in example["labels"] if token != -100],
+            skip_special_tokens=True
+        ).strip()
+
+        # Compute metrics
+        em, f1 = compute_em_and_f1(generated_answer, reference_answer)
+        em_scores.append(em)
+        f1_scores.append(f1)
+
+    avg_em = np.mean(em_scores)
+    avg_f1 = np.mean(f1_scores)
+    return {"exact_match": avg_em, "f1": avg_f1}
+
+
+class TuneReportCallback(TrainerCallback):
+    """Custom callback: reports Hugging Face Trainer metrics back to Ray Tune."""
+
+    def on_evaluate(
+            self, args, state, control, metrics=None, **kwargs):
+        if metrics:  # Called after each eval step
+            report(metrics)  # Increments training_iteration for ASHA/PBT
+
+
+def train_loop_per_worker(config):
+    """
+    Main training function executed by each Ray worker.
+    Each worker runs one trial with its own hyperparameter config.
+    """
+    # 1. Load + subset dataset for faster trials
     ds, tok = load_squad()
-    train_ds = ds["train"].shuffle(seed=42).select(range(1_000))
-    eval_ds  = ds["validation"].shuffle(seed=42).select(range(100))
+    train_ds = ds["train"].shuffle(seed=42).select(range(1000))
+    eval_ds = ds["validation"].shuffle(seed=42).select(range(100))
 
-    # Instantiate model and data collator
-    model     = BloomForCausalLM.from_pretrained(MODEL_NAME)
-    collator  = DataCollatorForSeq2Seq(tok, model=model, label_pad_token_id=-100)
+    # 2. Instantiate the BLOOM model
+    model = BloomForCausalLM.from_pretrained("bigscience/bloomz-560m")
 
-    # Build TrainingArguments from hyper‑params provided by Tune
+    # 3. TrainingArguments (hyperparameters passed from Ray Tune via `config`)
     args = TrainingArguments(
         output_dir="checkpoints",
-        learning_rate=float(config["lr"]),
-        per_device_train_batch_size=int(config["per_device_bs"]),
+        eval_strategy="epoch",  # Evaluate at the end of each epoch
+        save_strategy="no",  # Avoid saving checkpoints per epoch
+        learning_rate=config["lr"],  # Sampled by Ray Tune
+        per_device_train_batch_size=config["per_device_bs"],
         num_train_epochs=5,
-        fp16=True,
-        weight_decay=float(config["wd"]),
+        bf16=False, fp16=True,  # Mixed precision to save GPU memory
+        weight_decay=config["wd"],
         report_to="none",
-        deepspeed="/ibex/user/x_mohameta/distributed/otta/ray/deepspeed/ds_config.json",
+        deepspeed="/ibex/user/x_mohameta/distributed/otta/ray/deepspeed/ds_config.json"
     )
 
-    trainer = Trainer(model=model, args=args, train_dataset=train_ds, eval_dataset=eval_ds,
-                      tokenizer=tok, data_collator=collator)
+    collator = DataCollatorForSeq2Seq(tok, model=model, label_pad_token_id=-100)
 
-    # Wrap Trainer for Ray Train (handles DDP, FSDP, etc.)
+    # 4. Create the Trainer, attaching Ray Tune reporting callback
+    trainer = Trainer(model=model,
+                      args=args,
+                      train_dataset=train_ds,
+                      eval_dataset=eval_ds,
+                      tokenizer=tok,
+                      callbacks=[TuneReportCallback()],
+                      data_collator=collator, )
+
+    # 5. Prepare Trainer for Ray (wraps DDP/FSDP for multi-worker)
     trainer = rhf.prepare_trainer(trainer)
     trainer.train()
 
-    # Evaluate and report metrics back to Tune
-    eval_results          = trainer.evaluate()
-    custom_metrics        = evaluate_model(trainer, eval_ds, tok)
-    custom_metrics.update({"eval_loss": eval_results["eval_loss"]})
-    report(custom_metrics)  # ray.train.report
+    # 6. Final evaluation + report back best metrics to Ray Tune
+    eval_results = trainer.evaluate()
+    metrics = evaluate_model(trainer, eval_ds, tok)
+    metrics["eval_loss"] = eval_results["eval_loss"]
+    report(metrics)  # Final report (important for ASHA and get_best_result)
 
-# ────────────────────── Ray-Train + Tune Configuration ───────────────
+
+# --- Ray Tune wrapper (head node logic) ---------------------------------------
 
 trainer = TorchTrainer(
-    train_loop_per_worker=train_loop_per_worker,
-    train_loop_config={"lr": 1e-5, "per_device_bs": 1, "wd": 0.0},
-    scaling_config=ScalingConfig(num_workers=2, use_gpu=True, resources_per_worker={"CPU": 2, "GPU": 1}),
-    run_config=RunConfig(name="bloom_fsdp_tune", checkpoint_config=CheckpointConfig(num_to_keep=1)),
+    train_loop_per_worker=train_loop_per_worker,  # Training logic per worker
+    train_loop_config={  # Default config (overridden by Tune)
+        "lr": 1e-5,
+        "per_device_bs": 1,
+    },
+    scaling_config=ScalingConfig(
+        num_workers=2,  # 2 workers per trial
+        use_gpu=True,  # Use GPUs (assigned automatically by Ray)
+        resources_per_worker={"CPU": 2, "GPU": 1}  # 2 CPUs + 1 GPU per worker
+    ),
+    run_config=RunConfig(
+        name="bloom_fsdp_tune",
+        checkpoint_config=CheckpointConfig(num_to_keep=1)  # Keep only latest checkpoint per trial
+    )
 )
 
-search_alg = OptunaSearch(metric="eval_loss", mode="min")  # Bayesian/TPE
+# --- Ray Tune search & scheduler ---------------------------------------------
 
-# Tune will mutate *train_loop_config* automatically below
-
-param_space = {
-    "train_loop_config": {
-        "lr": tune.loguniform(5e-6, 2e-4),
-        "per_device_bs": tune.choice([1, 2]),
-        "wd": tune.choice([0.0, 0.01]),
-    }
-}
+search_alg = OptunaSearch(metric="eval_loss", mode="min")  # Optuna for sampling hyperparameters
 
 tuner = tune.Tuner(
     trainer.as_trainable(),
     tune_config=tune.TuneConfig(
-        search_alg=search_alg,
-        scheduler=tune.schedulers.ASHAScheduler(metric="eval_loss", mode="min"),
-        num_samples=12,            # total trials
-        max_concurrent_trials=4,   # placement‑group limit
+        search_alg=search_alg,  # Hyperparameter search strategy
+        scheduler=tune.schedulers.ASHAScheduler(  # ASHA for early stopping
+            metric="eval_loss",
+            mode="min",
+            grace_period=1,
+            max_t=5,
+            reduction_factor=2
+        ),
+        num_samples=12,  # Total trials to run
+        max_concurrent_trials=4,  # Max active trials at once
     ),
-    param_space=param_space,
+    param_space={  # Hyperparameter search space
+        "train_loop_config": {
+            "lr": tune.loguniform(5e-6, 2e-4),
+            "per_device_bs": tune.choice([1, 2]),
+            "wd": tune.choice([0.0, 0.01])
+        }
+    },
 )
 
-# ─────────────────────────── Driver entry ────────────────────────────
+# --- Main: executed on head node ---------------------------------------------
+
 if __name__ == "__main__":
-    # Ray cluster addresses provided via SLURM env‑vars in launch experiments
     print("=== Starting bloom_ray_tune.py ===", file=sys.stderr)
     print(f"RAY ADDR: {os.environ.get('ip_head')}", file=sys.stderr)
 
+    # Connects to the Ray head node (IP set by SLURM head script)
     ray.init(address=os.environ["ip_head"],
              _node_ip_address=os.environ["head_node_ip"],
              _redis_password=os.environ["redis_password"])
 
-    print("Training started…")
-    result       = tuner.fit()
-    best_result  = result.get_best_result(metric="eval_loss", mode="min")
-    print("\nBest Trial Result:")
-    print(json.dumps(best_result.metrics, indent=2))
+    print("Training started...")
+
+    # Launch all trials
+    result = tuner.fit()
+
+    # Print best trial’s metrics
+    best_result = result.get_best_result(metric="eval_loss",

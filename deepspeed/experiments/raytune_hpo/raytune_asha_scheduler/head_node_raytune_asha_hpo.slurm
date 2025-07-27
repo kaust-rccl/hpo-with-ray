@@ -7,10 +7,13 @@
 #SBATCH --time=00:30:00
 
 CURRENT_DIR=$(pwd)
-WORKER_DIR=CURRENT_DIR
-ROOT_DIR="$(realpath "$BASE_DIR/../../../")"
-SCRIPT_DIR="$ROOT_DIR/experiments/raytune_hpo/raytune_asha_scheduler"
-DS_CONFIG_DIR="$ROOT_DIR/experiments/config"
+WORKER_DIR=$CURRENT_DIR
+
+cd "$CURRENT_DIR/../../../"
+
+ROOT_DIR=$(pwd)
+SCRIPT_DIR="$ROOT_DIR/scripts/raytune_hpo/raytune_asha_scheduler"
+DS_CONFIG_DIR="$ROOt_DIR/config"
 
 source /ibex/user/x_mohameta/miniforge/etc/profile.d/conda.sh
 conda activate bloom-finetune
@@ -88,7 +91,7 @@ export ip_head
 export head_node_ip
 export redis_password
 echo "Launching script from: $(pwd)"
-python -u "$SCRIPT_DIR/bloom_ray_tune.py" --deepspeed "$DS_CONFIG_DIR"
+python -u "$SCRIPT_DIR/raytune_asha_hpo.py" --deepspeed "$DS_CONFIG_DIR"
 
 # ---------- shutdown ----------------------------------------------------------
 touch shutdown.txt

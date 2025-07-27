@@ -4,7 +4,7 @@
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --tasks-per-node=1
-#SBATCH --cpus-per-task=18
+#SBATCH --cpus-per-task=20
 #SBATCH --time=01:30:00
 #SBATCH --gpus-per-node=8
 #SBATCH --constraint=v100
