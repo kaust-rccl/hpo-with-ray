@@ -242,7 +242,7 @@ This script handles fine-tuning and evaluation for one hyperparameter combinatio
   ```
 
   | **Job Start Time** | **Job Finish Time** | **Total Job Time ** |
-    |--------------------|---------------------|---------------------|
+      |--------------------|---------------------|---------------------|
   | <br/>              |                     |                     |
 
 
@@ -254,7 +254,7 @@ This script handles fine-tuning and evaluation for one hyperparameter combinatio
 - Fill the result table with information extracted from the `.csv` file:
 
   | **Combo ID** | **Learning Rate (lr)** | **Batch Size (bs)** | **Weight Decay (wd)** | **Eval Loss** | **Runtime (s)** |
-    |--------------|------------------------|----------------------|------------------------|---------------|----------------|
+      |--------------|------------------------|----------------------|------------------------|---------------|----------------|
   | 1            | 1e-5                   | 1                    | 0.0                    |               |                |
   | 2            | 1e-5                   | 1                    | 0.01                   |               |                |
   | 3            | 1e-5                   | 2                    | 0.0                    |               |                |
@@ -500,9 +500,91 @@ If either inequality fails, the extra trial will remain **PENDING** until resour
 
 ### Launching the Jobs
 
+1. Make sure you are in the same [directory](./) as this `README`, then navigate to the SLURM script directory:
+    ```commandline
+    cd experiments/raytune_hpo/raytune_asha_scheduler/
+    ```
+
+2. Submit the ASHA Ray Tune job:
+    ```commandline
+    sbatch head_node_raytune_asha_hpo.slurm
+    ```
+
+3. Monitor the job in the queue:
+    ```commandline
+    squeue --me
+    ```
+
 ### Result Collection Table
 
+- Navigate and open the Ray Tune logs file (produced by the head SLURM script):
+  ```commandline
+  cd experiments/raytune_hpo/raytune_asha_scheduler/logs
+  cat ray_head_bloom_5epochs-<jobid>.out
+  ```
+- Find the logged job start and finish time, it should look like:
+    ```commandline
+    ===== JOB 39567495 START  : yyyy-mm-dd hh:mm:ss +03 =====
+    ...
+    ===== JOB 39567495 FINISH : yyyy-mm-dd hh:mm:ss +03 =====
+    
+    ```
+  | **Job Start Time** | **Job Finish Time** | **Total Job Time ** |
+    |--------------------|---------------------|---------------------|
+  | <br/>              |                     |                     |
+
+- Scroll inside the log to locate the Ray Tune trials table (ASHA prints it automatically).
+  It will look similar to:
+    ```commandline
+    ╭─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+    │ Trial name              status         train_loop_config/lr     ...fig/per_device_bs     train_loop_config/wd     iter     total time (s)     eval_loss │
+    ├─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+    │ TorchTrainer_c89517f2   TERMINATED              5.39429e-05                        2                     0           5            484.505      10.2314  │
+    │ TorchTrainer_46b3bb6c   TERMINATED              5.64985e-06                        1                     0.01        5            793.556       9.27868 │
+    │ ...                                                                                                                                                      │
+    ╰─────────────────
+    ```
+- Extract trial details to fill the following table:
+
+  | **Combo ID** | **Learning Rate (lr)** | **Batch Size (bs)** | **Weight Decay (wd)** | **Eval Loss** | **Runtime (s)** |
+    |--------------|------------------------|---------------------|-----------------------|---------------|-----------------|
+  | 1            |                        |                     |                       |               |                 |
+  | 2            |                        |                     |                       |               |                 |
+  | 3            |                        |                     |                       |               |                 |
+  | 4            |                        |                     |                       |               |                 |
+  | 5            |                        |                     |                       |               |                 |
+  | 6            |                        |                     |                       |               |                 |
+  | 7            |                        |                     |                       |               |                 |
+  | 8            |                        |                     |                       |               |                 |
+  | 9            |                        |                     |                       |               |                 |
+  | 10           |                        |                     |                       |               |                 |
+  | 11           |                        |                     |                       |               |                 |
+  | 12           |                        |                     |                       |               |                 |
+
+- At the bottom of the log, find the Best Trial Result printed by Ray Tune, it should be similar to:
+
+```commandline
+Best Trial Result:
+{'eval_loss': 9.24211, 'epoch': 2.0, 'time_total_s': 201.80,
+ 'config': {'train_loop_config': {'lr': 2.53307e-05, 'per_device_bs': 2, 'wd': 0.0}}}
+```
+
+| **Best Learning Rate (lr)** | **Best Batch Size (bs)** | **Best Weight Decay (wd)** | **Best Eval Loss** | **Total Runtime (s)** | **Epochs** |
+|-----------------------------|--------------------------|----------------------------|--------------------|-----------------------|------------|
+| <br/>                       |                          |                            |                    |                       |            |
+
 ### Quiz Questions
+
+1. **Compare the Total Job Time vs Trial Runtimes**  
+   - Look at the **Total Job Time** (difference between job start and finish timestamps) and compare it with the **sum of all trial runtimes** in the table.  
+   - **Question:** Why is the total job time **much less** than the accumulated trial times?  
+   
+
+2. **Interpreting the Advantage of ASHA**  
+   - Based on your observation above, explain **why this concurrent, early-stopping setup is better than manual HPO** in terms of:  
+     - **GPU usage efficiency**  
+     - **Total time to find the best configuration**  
+     - **Exploration of different hyperparameter combinations**
 
 ---
 
