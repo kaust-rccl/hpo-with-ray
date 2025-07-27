@@ -157,6 +157,7 @@ By running each trial sequentially in **its own process**, we guarantee:
 - Prints job start/finish times with `trap`.
 
 - Outputs to `logs/<job_name>-<job_id>.out`.
+- Automatic Log Parsing: At the end of all trials, the SLURM script automatically generates a CSV with the same name as the SLURM log `logs/<job_name>-<job_id>.csv`.
 
 ### Training Python File
 
@@ -201,40 +202,62 @@ This script handles fine-tuning and evaluation for one hyperparameter combinatio
 ## Exercise: Launch, Track, and Analyze
 ### Launching the Jobs
 1. Make sure you are in the same [directory](./) as this `README`, the navigate to the SLURM script directory:
-  ```commandline
-  cd experiments/manual_hpo/
-  ```
+    ```commandline
+    cd experiments/manual_hpo/
+    ```
 2. Submit the manual HPO job:
-  ```commandline
-  sbatch manual_bloom_hpo.slurm
-  ```
+    ```commandline
+    sbatch manual_bloom_hpo.slurm
+    ```
 3. Monitor the job in the queue
-  ```commandline
-  squeue --me
-  ```
-4. Inspect logs after completion
-  ```commandline 
-  cat logs/bloom_hpo_serial_5_epochs-<jobid>.out
-  ```
-### Launching the Jobs
+    ```commandline
+    squeue --me
+    ```
 
 ### Result Collection Table
-| **Combo ID** | **Learning Rate (lr)** | **Batch Size (bs)** | **Weight Decay (wd)** | **Eval Loss** | **Exact Match (EM)** | **F1** | **Runtime (s)** | **GPU Hours** | **Notes** |
-|--------------|-------------------------|----------------------|------------------------|---------------|-----------------------|--------|----------------|---------------|-----------|
-| 1            | 1e-5                    | 1                    | 0.0                    |               |                       |        |                |               |           |
-| 2            | 1e-5                    | 1                    | 0.01                   |               |                       |        |                |               |           |
-| 3            | 1e-5                    | 2                    | 0.0                    |               |                       |        |                |               |           |
-| 4            | 1e-5                    | 2                    | 0.01                   |               |                       |        |                |               |           |
-| 5            | 2e-4                    | 1                    | 0.0                    |               |                       |        |                |               |           |
-| 6            | 2e-4                    | 1                    | 0.01                   |               |                       |        |                |               |           |
-| 7            | 2e-4                    | 2                    | 0.0                    |               |                       |        |                |               |           |
-| 8            | 2e-4                    | 2                    | 0.01                   |               |                       |        |                |               |           |
-| 9            | 5e-6                    | 1                    | 0.0                    |               |                       |        |                |               |           |
-| 10           | 5e-6                    | 1                    | 0.01                   |               |                       |        |                |               |           |
-| 11           | 5e-6                    | 2                    | 0.0                    |               |                       |        |                |               |           |
-| 12           | 5e-6                    | 2                    | 0.01                   |               |                       |        |                |               |           
+
+- Navigate and open the logs file:
+  ```commandline
+  cd experiments/manual_hpo/logs
+  cat bloom_hpo_serial_5_epochs-<jobid>.out
+  ```
+- Find the logged job start and finish time, it should look like:
+  ```commandline
+  ===== JOB 39567495 START  : yyyy-mm-dd hh:mm:ss +03 =====
+  ...
+  ===== JOB 39567495 FINISH : yyyy-mm-dd hh:mm:ss +03 =====
+  ```
+  
+  | **Job Start Time** | **Job Finish Time** | **Total Job Time ** |
+  |--------------------|---------------------|---------------------|
+  | <br/>              |                     |                     |
+
+
+- Navigate and open the parsed results (done automatically after job completion):
+  ```commandline
+  cd experiments/manual_hpo/logs
+  column -t -s, bloom_hpo_serial_5_epochs-<jobid>.csv | less -S
+  ```
+- Fill the result table with information extracted from the `.csv` file: 
+  
+  | **Combo ID** | **Learning Rate (lr)** | **Batch Size (bs)** | **Weight Decay (wd)** | **Eval Loss** | **Runtime (s)** |
+  |--------------|------------------------|----------------------|------------------------|---------------|----------------|
+  | 1            | 1e-5                   | 1                    | 0.0                    |               |                |
+  | 2            | 1e-5                   | 1                    | 0.01                   |               |                |
+  | 3            | 1e-5                   | 2                    | 0.0                    |               |                |
+  | 4            | 1e-5                   | 2                    | 0.01                   |               |                |
+  | 5            | 2e-4                   | 1                    | 0.0                    |               |                |
+  | 6            | 2e-4                   | 1                    | 0.01                   |               |                |
+  | 7            | 2e-4                   | 2                    | 0.0                    |               |                |
+  | 8            | 2e-4                   | 2                    | 0.01                   |               |                |
+  | 9            | 5e-6                   | 1                    | 0.0                    |               |                |
+  | 10           | 5e-6                   | 1                    | 0.01                   |               |                |
+  | 11           | 5e-6                   | 2                    | 0.0                    |               |                |
+  | 12           | 5e-6                   | 2                    | 0.01                   |               |                |           
 
 ### Quiz Questions
+
+- What key information should you extract from each trial’s log to decide the best hyperparameter configuration?
 
 ---
 
