@@ -1,4 +1,4 @@
-"""bloom_ray_tune_commented.py
+"""
 -------------------------------------------------
 Fine‑tune **BLOOM‑560M** on the SQuAD v1.1 dataset with **Ray-Tune** +
 Optuna hyper‑parameter search and ASHA early‑stopping.
@@ -6,8 +6,8 @@ Optuna hyper‑parameter search and ASHA early‑stopping.
 Key features
 ============
 * Hugging-Face **Trainer** API – supports fp16 + DeepSpeed.
-* **TorchTrainer** (RayTrain v2) – handles multi‑GPU workers.
-* **OptunaSearch** – Bayesian / TPE search over LR, BS, WD.
+* **TorchTrainer** – handles multi‑GPU workers.
+* **OptunaSearch** – search over LR, BS, WD.
 * **ASHA** scheduler – early‑terminate poor trials, fits cluster budget.
 """
 
@@ -42,7 +42,8 @@ MAX_LEN   = 512                       # token length for both prompt & answer
 # ───────────────────── Dataset Loading & Preprocessing ──────────────
 
 def load_squad() -> Tuple[Dict[str, Any], BloomTokenizerFast]:
-    """Load **SQuAD v1.1** and tokenize for generative QA.
+    """
+    Load **SQuADv1.1** and tokenize for generative QA.
 
     Returns
     -------

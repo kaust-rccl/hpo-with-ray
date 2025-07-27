@@ -10,6 +10,7 @@ CURRENT_DIR=$(pwd)
 WORKER_DIR=CURRENT_DIR
 ROOT_DIR="$(realpath "$BASE_DIR/../../../")"
 SCRIPT_DIR="$ROOT_DIR/experiments/raytune_hpo/raytune_asha_scheduler"
+DS_CONFIG_DIR="$ROOT_DIR/experiments/config"
 
 source /ibex/user/x_mohameta/miniforge/etc/profile.d/conda.sh
 conda activate bloom-finetune
@@ -74,7 +75,7 @@ sleep 20
 # ---------- spawn workers -----------------------------------------------------
 job_ids=()
 for (( i=1; i<=${NUM_WORKERS}; i++ )); do
-  job_ids[$i]=$(sbatch -x $SLURM_NODELIST "$WORKER_DIR/worker_node_v100.slurm" | awk '{print $4}')
+  job_ids[$i]=$(sbatch -x $SLURM_NODELIST "$WORKER_DIR/worker_node_raytune_asha_hpo.slurm" | awk '{print $4}')
 done
 
 # wait until workers leave PD (pending) state
@@ -87,7 +88,7 @@ export ip_head
 export head_node_ip
 export redis_password
 echo "Launching script from: $(pwd)"
-python -u "$SCRIPT_DIR/bloom_ray_tune.py"
+python -u "$SCRIPT_DIR/bloom_ray_tune.py" --deepspeed "$DS_CONFIG_DIR"
 
 # ---------- shutdown ----------------------------------------------------------
 touch shutdown.txt

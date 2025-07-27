@@ -12,6 +12,7 @@
 CURRENT_DIR=$(pwd)
 ROOT_DIR="$(realpath "$BASE_DIR/../../../")"
 SCRIPT_DIR="$ROOT_DIR/experiments/raytune_hpo/manual_hpo"
+DS_CONFIG_DIR="$ROOT_DIR/experiments/config"
 
 # ──────────────────────────── ENVIRONMENT SETUP ─────────────────────────────
 module load cuda/12.4.1                       # Load matching CUDA toolkit
