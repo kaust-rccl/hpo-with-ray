@@ -10,12 +10,14 @@
 #SBATCH --mem=256G                            # System RAM reservation
 
 CURRENT_DIR=$(pwd)
-ROOT_DIR="$(realpath "$BASE_DIR/../../../")"
-SCRIPT_DIR="$ROOT_DIR/experiments/raytune_hpo/manual_hpo"
-DS_CONFIG_DIR="$ROOT_DIR/experiments/config"
+cd "$CURRENT_DIR/../../"
+
+ROOT_DIR=$(pwd)
+SCRIPT_DIR="$ROOT_DIR/scripts/manual"
 
 # ──────────────────────────── ENVIRONMENT SETUP ─────────────────────────────
 module load cuda/12.4.1                       # Load matching CUDA toolkit
+
 source /ibex/user/$USER/miniforge/etc/profile.d/conda.sh
 conda activate bloom-finetune                 # Activate conda env with HF + DeepSpeed
 
