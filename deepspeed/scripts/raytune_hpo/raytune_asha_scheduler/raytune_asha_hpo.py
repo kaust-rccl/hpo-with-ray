@@ -247,4 +247,7 @@ if __name__ == "__main__":
     result = tuner.fit()
 
     # Print best trial’s metrics
-    best_result = result.get_best_result(metric="eval_loss",
+    best_result = result.get_best_result(metric="eval_loss", mode="min")
+    print("\nBest Trial Result:")
+    print(best_result.metrics)
+
