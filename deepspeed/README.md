@@ -93,7 +93,7 @@ Schedulers decide how trials are run, paused, or stopped:
 
 ---
 
-# Environment Setup and File Structure
+## Environment Setup and File Structure
 
 ### Environment Setup
 
@@ -107,12 +107,12 @@ Schedulers decide how trials are run, paused, or stopped:
 
 In this exercise, we perform **manual hyperparameter optimization (HPO)** by iterating over a predefined grid of
 hyperparameters (learning rate, batch size, weight decay).
-**A SLURM script** ([`manual_bloom_hpo.slurm`](./experiments/manual_hpo/manual_bloom_hpo.slurm)) handles the **job
+**A SLURM script** ([`manual_bloom_hpo.slurm`](./experiments/manual/bloom_hpo_manual.slurm)) handles the **job
 submission, environment setup, and looping logic**, while **a Python training script** ([
-`manual_bloom_hpo.py`](scripts/manual_hpo/manual_bloom_hpo.py)) handles data preprocessing, fine-tuning, and evaluation.
+`manual_bloom_hpo.py`](scripts/manual/bloom_hpo_manual.py)) handles data preprocessing, fine-tuning, and evaluation.
 
 Each hyperparameter combination runs **sequentially** (serial execution), using 2 GPUs per run, for 5 epochs. After all
-runs, we collect evaluation loss, F1, EM, and runtime to select the best configuration.
+runs, we collect evaluation loss, and runtime to select the best configuration.
 
 ## Breaking Down the Manual HPO Building Block
 
@@ -168,7 +168,12 @@ By running each trial sequentially in **its own process**, we guarantee:
 
 - Outputs to `logs/<job_name>-<job_id>.out`.
 - Automatic Log Parsing: At the end of all trials, the SLURM script automatically generates a CSV with the same name as
-  the SLURM log `logs/<job_name>-<job_id>.csv`.
+  the SLURM log `logs/<job_name>-<job_id>.csv`, that  collects and summarizes key metrics from each hyperparameter combination run, including:
+  - **Learning rate**, **batch size**, and **weight decay**
+  - **Evaluation loss**, **F1 score**, and **Exact Match (EM)** score
+  - **Total training runtime**
+  - **GPU-hours used**
+  It serves as a performance report across all tried configurations and helps in quickly identifying the best-performing setup for extended training.
 
 ### Training Python File
 
@@ -214,13 +219,13 @@ This script handles fine-tuning and evaluation for one hyperparameter combinatio
 
 ### Launching the Jobs
 
-1. Make sure you are in the same [directory](./) as this `README`, the navigate to the SLURM script directory:
+1. Make sure you are in the same [directory](./) as this `README`, then navigate to the SLURM script directory:
     ```commandline
-    cd experiments/manual_hpo/
+    cd experiments/manual/
     ```
 2. Submit the manual HPO job:
     ```commandline
-    sbatch manual_bloom_hpo.slurm
+    sbatch bloom_hpo_manual.slurm
     ```
 3. Monitor the job in the queue
     ```commandline
@@ -231,7 +236,7 @@ This script handles fine-tuning and evaluation for one hyperparameter combinatio
 
 - Navigate and open the logs file:
   ```commandline
-  cd experiments/manual_hpo/logs
+  cd ./logs
   cat bloom_hpo_serial_5_epochs-<jobid>.out
   ```
 - Find the logged job start and finish time, it should look like:
@@ -242,7 +247,7 @@ This script handles fine-tuning and evaluation for one hyperparameter combinatio
   ```
 
   | **Job Start Time** | **Job Finish Time** | **Total Job Time ** |
-      |--------------------|---------------------|---------------------|
+  |--------------------|---------------------|---------------------|
   | <br/>              |                     |                     |
 
 
@@ -254,7 +259,7 @@ This script handles fine-tuning and evaluation for one hyperparameter combinatio
 - Fill the result table with information extracted from the `.csv` file:
 
   | **Combo ID** | **Learning Rate (lr)** | **Batch Size (bs)** | **Weight Decay (wd)** | **Eval Loss** | **Runtime (s)** |
-      |--------------|------------------------|----------------------|------------------------|---------------|----------------|
+  |--------------|------------------------|----------------------|------------------------|---------------|----------------|
   | 1            | 1e-5                   | 1                    | 0.0                    |               |                |
   | 2            | 1e-5                   | 1                    | 0.01                   |               |                |
   | 3            | 1e-5                   | 2                    | 0.0                    |               |                |
@@ -296,10 +301,6 @@ while job orchestration on the HPC cluster is handled by two **SLURM scripts**:
 
 ### Training Python File
 
-### **Breaking Down the ASHA HPO Building Block**
-
-#### **Training Python File (`bloom_ray_tune.py`)**
-
 - **Dataset Loading & Preprocessing:**
     - Uses the same `load_squad()` preprocessing as in manual HPO.
     - Trains on a subset: **1,000 training samples, 100 validation samples**.
@@ -327,25 +328,27 @@ while job orchestration on the HPC cluster is handled by two **SLURM scripts**:
     ```
   **Explanation of Each Argument:**
 
-      1. **`lr` (Learning Rate)**  
-       - **`tune.loguniform(5e-6, 2e-4)`**  
-       - Ray Tune will randomly sample learning rates on a **logarithmic scale** between **5×10⁻⁶** and **2×10⁻⁴**.  
-       - The logarithmic scale is preferred because learning rates can vary over orders of magnitude, and small changes at lower values often have a big effect on training stability.
+  1. **`lr` (Learning Rate)**  
+   - **`tune.loguniform(5e-6, 2e-4)`**  
+   - Ray Tune will randomly sample learning rates on a **logarithmic scale** between **5×10⁻⁶** and **2×10⁻⁴**.  
+   - The logarithmic scale is preferred because learning rates can vary over orders of magnitude, and small changes at lower values often have a big effect on training stability.
 
-       2. **`per_device_bs` (Per-Device Batch Size)**  
-          - **`tune.choice([1, 2])`**  
-          - Ray Tune will pick either **1** or **2** samples per GPU per forward/backward pass.  
-          - Small batch sizes reduce GPU memory usage (important for V100s with 32GB) but may slow convergence. Larger batch sizes speed up training but need more memory.
+   2. **`per_device_bs` (Per-Device Batch Size)**  
+      - **`tune.choice([1, 2])`**  
+      - Ray Tune will pick either **1** or **2** samples per GPU per forward/backward pass.  
+      - Small batch sizes reduce GPU memory usage (important for V100s with 32GB) but may slow convergence. 
+      
+        Larger batch sizes speed up training but need more memory.
 
-       3. **`wd` (Weight Decay)**  
-          - **`tune.choice([0.0, 0.01])`**  
-          - Ray Tune will pick either **no weight decay (0.0)** or a small regularization term (**0.01**).  
-          - Weight decay helps reduce overfitting by penalizing large weights, but too much can slow learning.
+   3. **`wd` (Weight Decay)**  
+      - **`tune.choice([0.0, 0.01])`**  
+      - Ray Tune will pick either **no weight decay (0.0)** or a small regularization term (**0.01**).  
+      - Weight decay helps reduce overfitting by penalizing large weights, but too much can slow learning.
 
   **How ASHA Uses These Values:**
     - ASHA will start multiple trials with different sampled combinations.
-        - Poor-performing combinations (high `eval_loss`) will be stopped early, while promising ones continue training
-          longer.
+    - Poor-performing combinations (high `eval_loss`) will be stopped early, while promising ones continue training
+      longer.
 
 
 - **ASHA Scheduler:**
