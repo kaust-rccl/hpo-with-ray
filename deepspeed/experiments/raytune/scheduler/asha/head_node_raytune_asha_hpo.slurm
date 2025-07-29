@@ -9,10 +9,10 @@
 CURRENT_DIR=$(pwd)
 WORKER_DIR=$CURRENT_DIR
 
-cd "$CURRENT_DIR/../../../"
+cd "$CURRENT_DIR/../../../../"
 
 ROOT_DIR=$(pwd)
-SCRIPT_DIR="$ROOT_DIR/scripts/raytune_hpo/raytune_asha_scheduler"
+SCRIPT_DIR="$ROOT_DIR/scripts/raytune/raytune_asha_scheduler"
 DS_CONFIG_DIR="$ROOt_DIR/config"
 
 source /ibex/user/x_mohameta/miniforge/etc/profile.d/conda.sh

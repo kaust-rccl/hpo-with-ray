@@ -293,9 +293,9 @@ The training is handled by a **Python script** ([
 while job orchestration on the HPC cluster is handled by two **SLURM scripts**:
 
 - **Head node launcher** ([
-  `ray_head_bloom.slurm`](./experiments/raytune_hpo/raytune_asha_scheduler/head_node_raytune_asha_hpo.slurm))
+  `ray_head_bloom.slurm`](experiments/raytune/scheduler/asha/head_node_raytune_asha_hpo.slurm))
 - **Worker node launcher** ([
-  `worker_node_v100.slurm`](./experiments/raytune_hpo/raytune_asha_scheduler/worker_node_raytune_asha_hpo.slurm))
+  `worker_node_v100.slurm`](experiments/raytune/scheduler/asha/worker_node_raytune_asha_hpo.slurm))
 
 ## Breaking Down the Ray-Tune (ASHA Scheduler) HPO Building Block
 
@@ -533,7 +533,7 @@ If either inequality fails, the extra trial will remain **PENDING** until resour
     
     ```
   | **Job Start Time** | **Job Finish Time** | **Total Job Time ** |
-    |--------------------|---------------------|---------------------|
+  |--------------------|---------------------|---------------------|
   | <br/>              |                     |                     |
 
 - Scroll inside the log to locate the Ray Tune trials table (ASHA prints it automatically).
@@ -550,7 +550,7 @@ If either inequality fails, the extra trial will remain **PENDING** until resour
 - Extract trial details to fill the following table:
 
   | **Combo ID** | **Learning Rate (lr)** | **Batch Size (bs)** | **Weight Decay (wd)** | **Eval Loss** | **Runtime (s)** |
-    |--------------|------------------------|---------------------|-----------------------|---------------|-----------------|
+  |--------------|------------------------|---------------------|-----------------------|---------------|-----------------|
   | 1            |                        |                     |                       |               |                 |
   | 2            |                        |                     |                       |               |                 |
   | 3            |                        |                     |                       |               |                 |
