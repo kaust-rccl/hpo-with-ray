@@ -7,14 +7,11 @@ Halving Algorithm)** scheduler.
 Unlike the manual grid search, ASHA runs **multiple trials concurrently** and **stops poor-performing trials early**,
 freeing resources for more promising ones.
 
-The training is handled by a **Python script** ([
-`bloom_ray_tune.py`](./scripts/raytune_hpo/raytune_asha_scheduler/raytune_asha_hpo.py)),  
+The training is handled by a **Python script** ([`raytune_asha_hpo.py`](./../../../../scripts/raytune/scheduler/asha/raytune_asha_hpo.py),  
 while job orchestration on the HPC cluster is handled by two **SLURM scripts**:
 
-- **Head node launcher** ([
-  `ray_head_bloom.slurm`](experiments/raytune/scheduler/asha/head_node_raytune_asha_hpo.slurm))
-- **Worker node launcher** ([
-  `worker_node_v100.slurm`](experiments/raytune/scheduler/asha/worker_node_raytune_asha_hpo.slurm))
+- **Head node launcher** ([`head_node_raytune_asha_hpo.slurm`](./head_node_raytune_asha_hpo.slurm))
+- **Worker node launcher** ([`worker_node_raytune_asha_hpo.slurm`](./worker_node_raytune_asha_hpo.slurm))
 
 ## Breaking Down the Ray-Tune (ASHA Scheduler) HPO Building Block
 
@@ -48,9 +45,9 @@ while job orchestration on the HPC cluster is handled by two **SLURM scripts**:
   **Explanation of Each Argument:**
 
   1. **`lr` (Learning Rate)**  
-   - **`tune.loguniform(5e-6, 2e-4)`**  
-   - Ray Tune will randomly sample learning rates on a **logarithmic scale** between **5×10⁻⁶** and **2×10⁻⁴**.  
-   - The logarithmic scale is preferred because learning rates can vary over orders of magnitude, and small changes at lower values often have a big effect on training stability.
+     - **`tune.loguniform(5e-6, 2e-4)`**  
+     - Ray Tune will randomly sample learning rates on a **logarithmic scale** between **5×10⁻⁶** and **2×10⁻⁴**.  
+     - The logarithmic scale is preferred because learning rates can vary over orders of magnitude, and small changes at lower values often have a big effect on training stability.
 
    2. **`per_device_bs` (Per-Device Batch Size)**  
       - **`tune.choice([1, 2])`**  
@@ -250,7 +247,7 @@ If either inequality fails, the extra trial will remain **PENDING** until resour
 
 - Navigate and open the Ray Tune logs file (produced by the head SLURM script):
   ```commandline
-  cd experiments/raytune_hpo/raytune_asha_scheduler/logs
+  cd ./logs
   cat ray_head_bloom_5epochs-<jobid>.out
   ```
   - Find the logged job start and finish time, it should look like:

@@ -4,9 +4,9 @@
 
 In this exercise, we perform **manual hyperparameter optimization (HPO)** by iterating over a predefined grid of
 hyperparameters (learning rate, batch size, weight decay).
-**A SLURM script** ([`manual_bloom_hpo.slurm`](./experiments/manual/bloom_hpo_manual.slurm)) handles the **job
+**A SLURM script** ([`bloom_hpo_manual.slurm`](./bloom_hpo_manual.slurm)) handles the **job
 submission, environment setup, and looping logic**, while **a Python training script** ([
-`manual_bloom_hpo.py`](scripts/manual/bloom_hpo_manual.py)) handles data preprocessing, fine-tuning, and evaluation.
+`bloom_hpo_manual.py`](./../../scripts/manual/bloom_hpo_manual.py)) handles data preprocessing, fine-tuning, and evaluation.
 
 Each hyperparameter combination runs **sequentially** (serial execution), using 2 GPUs per run, for 5 epochs. After all
 runs, we collect evaluation loss, and runtime to select the best configuration.
@@ -149,7 +149,7 @@ Below is the summary of the results:
 
 You’ll use these results later to compare against Ray Tune’s automated HPO methods.
 
-## 🔁 Long-Run Training with Manual Best (30 Epochs)
+## Long-Run Training with Manual Best (30 Epochs)
 
 After selecting the best configuration from above, we reran the model using:
 

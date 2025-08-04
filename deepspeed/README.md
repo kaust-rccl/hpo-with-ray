@@ -203,7 +203,7 @@ Each member should now navigate to the README for their assigned method:
 | Manual HPO (pre-run) | [`experiments/manual/`](./experiments/manual/)                               | [Instructions Here](./experiments/manual/readme.md)                     |
 | ASHA (Ray Tune)      | [`experiments/raytune/asha/`](./experiments/raytune/scheduler/asha/)         | [Instructions Here](./experiments/raytune/scheduler/asha/readme.md)     |
 | PBT (Ray Tune)       | [`experiments/raytune/pbt/`](./experiments/raytune/scheduler/pbt/)           | [Instructions Here](./experiments/raytune/scheduler/pbt/readme.md)      |
-| Bayesian (Ray Tune)  | [`experiments/raytune/bayesian/`](./experiments/raytune/scheduler/bayesian/) | [Instructions Here](./experiments/raytune/scheduler/bayesian/README.md) |
+| Bayesian (Ray Tune)  | [`experiments/raytune/bayesian/`](./experiments/raytune/scheduler/bayesian/) | [Instructions Here](./experiments/raytune/scheduler/bayesian/readme.md) |
 
 ---
 

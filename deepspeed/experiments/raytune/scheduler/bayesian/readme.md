@@ -11,12 +11,12 @@ This experiment fine-tunes **BLOOM-560M** on the **SQuAD v1.1** dataset using **
 
 The main training script is:
 
-- [`raytune_bayesian.py`](./raytune_bayesian.py)
+- [`raytune_bayesian.py`](./../../../../scripts/raytune/scheduler/bayesian/raytune_bayesian_hpo.py)
 
 The cluster orchestration uses SLURM scripts:
 
-- [`head_node.slurm`](./head_node.slurm)
-- [`worker_node.slurm`](./worker_node.slurm)
+- [`head_node_raytune_bayesian_hpo.slurm`](./head_node_raytune_bayesian_hpo.slurm)
+- [`worker_node_raytune_bayesian_hpo.slurm`](./worker_node_raytune_bayesian_hpo.slurm)
 
 > Users only need to submit the **head node job**. The head script automatically spawns the worker jobs.
 

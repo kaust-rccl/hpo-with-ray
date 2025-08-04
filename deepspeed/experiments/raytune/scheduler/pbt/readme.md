@@ -6,11 +6,11 @@
 In this exercise, we perform **automated hyperparameter optimization** using **Ray Tune’s Population-Based Training (PBT)** scheduler.  
 Unlike ASHA, which stops bad trials early, **PBT periodically explores new hyperparameter combinations** during training by **cloning and mutating** well-performing trials into weaker ones.
 
-The training is executed via a **Python script** ([`bloom_ray_tune_pbt.py`](./scripts/raytune_hpo/raytune_pbt_scheduler/raytune_pbt_hpo.py))  
+The training is executed via a **Python script** ([`raytune_pbt_hpo.py`](./../../../../scripts/raytune/scheduler/pbt/raytune_pbt_hpo.py))  
 and orchestrated on the cluster using:
 
-- **Head node SLURM script** ([`head_node_raytune_pbt_hpo.slurm`](./experiments/raytune_hpo/raytune_pbt_scheduler/head_node_raytune_pbt_hpo.slurm))
-- **Worker node SLURM script** ([`worker_node_v100.slurm`](./experiments/raytune_hpo/raytune_pbt_scheduler/worker_node_raytune_pbt_hpo.slurm))
+- **Head node SLURM script** ([`head_node_raytune_pbt_hpo.slurm`](./head_node_raytune_pbt_hpo.slurm))
+- **Worker node SLURM script** ([`worker_node_raytune_pbt_hpo.slurm`](./worker_node_raytune_pbt_hpo.slurm))
 
 ## Breaking Down the Ray-Tune (PBT Scheduler) HPO Building Block
 
@@ -189,7 +189,7 @@ If either inequality fails, the extra trial will remain **PENDING** until resour
 
 - Navigate and open the Ray Tune logs file (produced by the head SLURM script):
   ```commandline
-  cd experiments/raytune_hpo/raytune_pbt_scheduler/logs
+  cd ./logs
   cat ray_head_bloom_5epochs-<jobid>.out
   ```
   - Find the logged job start and finish time, it should look like:
