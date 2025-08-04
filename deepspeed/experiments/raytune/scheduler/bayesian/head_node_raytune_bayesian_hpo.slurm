@@ -85,7 +85,7 @@ sleep 20
 # ---------- spawn workers -----------------------------------------------------
 job_ids=()
 for (( i=1; i<=${NUM_WORKERS}; i++ )); do
-  job_ids[$i]=$(sbatch -x $SLURM_NODELIST "$WORKER_DIR/worker_node_raytune_asha_hpo.slurm" | awk '{print $4}')
+  job_ids[$i]=$(sbatch -x $SLURM_NODELIST "$WORKER_DIR/worker_node_raytune_bayesian_hpo.slurm" | awk '{print $4}')
 done
 
 # wait until workers leave PD (pending) state
@@ -110,7 +110,7 @@ export ip_head
 export head_node_ip
 export redis_password
 echo "Launching script from: $(pwd)"
-python -u "$SCRIPT_DIR/raytune_ahsa_hpo.py" \
+python -u "$SCRIPT_DIR/raytune_bayesian_hpo.py" \
 	--num_train_epochs 5 \
 	--deepspeed $ROOT_DIR/config/ds_config.json \
 	--lr_lower $LR_LOWER \

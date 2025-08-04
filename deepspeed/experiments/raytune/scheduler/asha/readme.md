@@ -239,7 +239,7 @@ If either inequality fails, the extra trial will remain **PENDING** until resour
     - `LR_UPPER`: Upper bound of learning rate range
     - `BS_CHOICES`: Space-separated list of per-device batch sizes
     - `WD_CHOICES`: Space-separated list of weight decay values
-    - 
+ 
 
 3. Monitor the job in the queue:
     ```commandline
