@@ -65,12 +65,14 @@ By running each trial sequentially in **its own process**, we guarantee:
 
 - Outputs to `logs/<job_name>-<job_id>.out`.
 - Automatic Log Parsing: At the end of all trials, the SLURM script automatically generates a CSV with the same name as
-  the SLURM log `logs/<job_name>-<job_id>.csv`, that  collects and summarizes key metrics from each hyperparameter combination run, including:
-  - **Learning rate**, **batch size**, and **weight decay**
-  - **Evaluation loss**, **F1 score**, and **Exact Match (EM)** score
-  - **Total training runtime**
-  - **GPU-hours used**
-  It serves as a performance report across all tried configurations and helps in quickly identifying the best-performing setup for extended training.
+  the SLURM log `logs/<job_name>-<job_id>.csv`, that collects and summarizes key metrics from each hyperparameter
+  combination run, including:
+    - **Learning rate**, **batch size**, and **weight decay**
+    - **Evaluation loss**, **F1 score**, and **Exact Match (EM)** score
+    - **Total training runtime**
+    - **GPU-hours used**
+      It serves as a performance report across all tried configurations and helps in quickly identifying the
+      best-performing setup for extended training.
 
 ### Training Python File
 
@@ -112,68 +114,51 @@ This script handles fine-tuning and evaluation for one hyperparameter combinatio
 
 - Prints a **summary dictionary** containing `lr`, `bs`, `wd`, `eval_loss`, and `runtime`.
 
-## Exercise: Launch, Track, and Analyze
+##  Manual HPO Results Summary
 
-### Launching the Jobs
+The manual HPO experiment was pre-run on a single node with 2 GPUs using a grid of 12 hyperparameter combinations. Each trial ran sequentially for 5 epochs, and the evaluation loss and runtime were recorded.
 
-1. Make sure you are in the same [directory](./) as this `README`, then navigate to the SLURM script directory:
-    ```commandline
-    cd experiments/manual/
-    ```
-2. Submit the manual HPO job:
-    ```commandline
-    sbatch bloom_hpo_manual.slurm
-    ```
-3. Monitor the job in the queue
-    ```commandline
-    squeue --me
-    ```
+Below is the summary of the results:
 
-### Result Collection Table
+### Manual HPO Results
 
-- Navigate and open the logs file:
-  ```commandline
-  cd ./logs
-  cat bloom_hpo_serial_5_epochs-<jobid>.out
-  ```
-- Find the logged job start and finish time, it should look like:
-  ```commandline
-  ===== JOB 39567495 START  : yyyy-mm-dd hh:mm:ss +03 =====
-  ...
-  ===== JOB 39567495 FINISH : yyyy-mm-dd hh:mm:ss +03 =====
-  ```
+| #  | Learning Rate (`lr`) | Batch Size (`bs`) | Weight Decay (`wd`) | Eval Loss          | Runtime (s) |
+|----|----------------------|-------------------|---------------------|--------------------|-------------|
+| 1  | 1e-05                | 1                 | 0.0                 | 9.7208             | 993.66      |
+| 2  | 1e-05                | 1                 | 0.01                | 9.7208             | 1010.88     |
+| 3  | 1e-05                | 2                 | 0.0                 | 10.0043            | 645.03      |
+| 4  | 1e-05                | 2                 | 0.01                | 10.0043            | 639.84      |
+| 5  | 0.0002               | 1                 | 0.0                 | 30.2203            | 1205.72     |
+| 6  | 0.0002               | 1                 | 0.01                | 30.2203            | 1224.02     |
+| 7  | 0.0002               | 2                 | 0.0                 | 21.1526            | 761.29      |
+| 8  | 0.0002               | 2                 | 0.01                | 21.1526            | 779.51      |
+| 9  | 5e-06                | 1                 | 0.0                 | 9.3347             | 1031.78     |
+| 10 | 5e-06                | 1                 | 0.01                | 9.3347             | 1003.58     |
+| 11 | 5e-06                | 2                 | 0.0                 | 9.5698             | 570.32      |
+| 12 | 5e-06                | 2                 | 0.01                | 9.5698             | 553.48      |
 
-  | **Job Start Time** | **Job Finish Time** | **Total Job Time ** |
-  |--------------------|---------------------|---------------------|
-  | <br/>              |                     |                     |
-
-
-- Navigate and open the parsed results (done automatically after job completion):
-  ```commandline
-  cd experiments/manual_hpo/logs
-  column -t -s, bloom_hpo_serial_5_epochs-<jobid>.csv | less -S
-  ```
-- Fill the result table with information extracted from the `.csv` file:
-
-  | **Combo ID** | **Learning Rate (lr)** | **Batch Size (bs)** | **Weight Decay (wd)** | **Eval Loss** | **Runtime (s)** |
-  |--------------|------------------------|----------------------|------------------------|---------------|----------------|
-  | 1            | 1e-5                   | 1                    | 0.0                    |               |                |
-  | 2            | 1e-5                   | 1                    | 0.01                   |               |                |
-  | 3            | 1e-5                   | 2                    | 0.0                    |               |                |
-  | 4            | 1e-5                   | 2                    | 0.01                   |               |                |
-  | 5            | 2e-4                   | 1                    | 0.0                    |               |                |
-  | 6            | 2e-4                   | 1                    | 0.01                   |               |                |
-  | 7            | 2e-4                   | 2                    | 0.0                    |               |                |
-  | 8            | 2e-4                   | 2                    | 0.01                   |               |                |
-  | 9            | 5e-6                   | 1                    | 0.0                    |               |                |
-  | 10           | 5e-6                   | 1                    | 0.01                   |               |                |
-  | 11           | 5e-6                   | 2                    | 0.0                    |               |                |
-  | 12           | 5e-6                   | 2                    | 0.01                   |               |                |           
-
-### Quiz Questions
-
-- What key information should you extract from each trial’s log to decide the best hyperparameter configuration?
+> All runs were performed using the same SQuAD subset, model configuration, and DeepSpeed setup for fair comparison.
 
 ---
 
+### Observations
 
+- The best configuration in terms of evaluation loss: **Trial #9** (lr = `5e-06`, bs = `1`, wd = `0.0`) with loss `9.3347`.
+- The fastest run: **Trial #12** with runtime `553.48` seconds.
+- The HPO experiment consumed a total runtime of  `2 hours, 57 minutes`
+
+You’ll use these results later to compare against Ray Tune’s automated HPO methods.
+
+## 🔁 Long-Run Training with Manual Best (30 Epochs)
+
+After selecting the best configuration from above, we reran the model using:
+
+- `lr = 5e-06`, `bs = 1`, `wd = 0.0`
+- Full 30 epochs of fine-tuning
+
+This simulates a long training job after tuning is complete.
+
+| **Metric**         | **Value**                        |
+|--------------------|----------------------------------|
+| Final Eval Loss    | 11.7463                          |
+| Total GPU Time     | 1 hour, 31 minutes, and 8.3 sec  |

@@ -244,16 +244,16 @@ If either inequality fails, the extra trial will remain **PENDING** until resour
   cd experiments/raytune_hpo/raytune_asha_scheduler/logs
   cat ray_head_bloom_5epochs-<jobid>.out
   ```
-- Find the logged job start and finish time, it should look like:
-    ```commandline
-    ===== JOB 39567495 START  : yyyy-mm-dd hh:mm:ss +03 =====
-    ...
-    ===== JOB 39567495 FINISH : yyyy-mm-dd hh:mm:ss +03 =====
+  - Find the logged job start and finish time, it should look like:
+      ```commandline
+      ===== JOB 39567495 START  : yyyy-mm-dd hh:mm:ss +03 =====
+      ...
+      ===== JOB 39567495 FINISH : yyyy-mm-dd hh:mm:ss +03 =====
     
-    ```
-  | **Job Start Time** | **Job Finish Time** | **Total Job Time ** |
-  |--------------------|---------------------|---------------------|
-  | <br/>              |                     |                     |
+      ```
+    | **Job Start Time** | **Job Finish Time** | **Total Job Time ** |
+    |--------------------|---------------------|---------------------|
+    | <br/>              |                     |                     |
 
 - Scroll inside the log to locate the Ray Tune trials table (ASHA prints it automatically).
   It will look similar to:

@@ -83,13 +83,16 @@ Schedulers decide how trials are run, paused, or stopped:
 
 #### Bayesian (Bayesian Optimization with HyperBand - BOHB)
 
-- Combines **Bayesian Optimization** (learns from past trials to suggest better hyperparameters) with **HyperBand** (efficient early-stopping strategy).
+- Combines **Bayesian Optimization** (learns from past trials to suggest better hyperparameters) with **HyperBand** (
+  efficient early-stopping strategy).
 
-- Starts with many short trials and **promotes the best ones** for longer training, refining them with **probabilistic guidance**.
+- Starts with many short trials and **promotes the best ones** for longer training, refining them with **probabilistic
+  guidance**.
 
 - Best used when you have a **limited GPU budget** and want to balance **smart search** with **efficient resource use**.
 
-- Unlike ASHA, BOHB doesn’t just explore randomly — it builds a **model of the search space** and chooses configurations based on **predicted performance**.
+- Unlike ASHA, BOHB doesn’t just explore randomly — it builds a **model of the search space** and chooses configurations
+  based on **predicted performance**.
 
 **Quick Comparison**
 
@@ -99,13 +102,12 @@ Schedulers decide how trials are run, paused, or stopped:
 
 - Bayesian → **Model-based search** with early stopping — efficient for **small budgets or expensive trials**.
 
-
 ## DeepSpeed
-
 
 ### Purpose and Role in Training
 
-[**DeepSpeed**](https://www.deepspeed.ai/) is an optimization library designed for **scaling and accelerating deep learning training**, especially for large models like BLOOM.
+[**DeepSpeed**](https://www.deepspeed.ai/) is an optimization library designed for **scaling and accelerating deep
+learning training**, especially for large models like BLOOM.
 
 In this workshop, DeepSpeed is used to:
 
@@ -114,7 +116,8 @@ In this workshop, DeepSpeed is used to:
 - **Automatically scale** batch sizes to maximize GPU utilization.
 - **Train large models** efficiently on limited hardware (e.g., 1–2 GPUs).
 
-It integrates seamlessly with Hugging Face’s `Trainer` and requires only a config file — no modification to training code is needed.
+It integrates seamlessly with Hugging Face’s `Trainer` and requires only a config file — no modification to training
+code is needed.
 
 
 > For a full breakdown of the DeepSpeed config used in this workshop, see  
@@ -128,7 +131,7 @@ It integrates seamlessly with Hugging Face’s `Trainer` and requires only a con
 
 <!-- TODO: yml file and instruction -->
 
-###  Project Structure
+### Project Structure
 
 This repository is organized into modular directories for code, configuration, and experiments.
 
@@ -176,14 +179,14 @@ This repository is organized into modular directories for code, configuration, a
 In this workshop, you'll work in **teams of 3 students**. Each group will:
 
 1. Choose a **hyperparameter range** for:
-   - **Learning Rate (lr)**
-   - **Weight Decay (wd)**
-   - **Batch Size (bs)**
+    - **Learning Rate (lr)**
+    - **Weight Decay (wd)**
+    - **Batch Size (bs)**
 
 2. Divide up the HPO strategies as follows:
-   - **Member 1:** Manual HPO (Grid Search)
-   - **Member 2:** Automated HPO with **ASHA Scheduler**
-   - **Member 3:** Automated HPO with **Population-Based Training (PBT)**
+    - **Member 1:** Automated HPO with **ASHA Scheduler**
+    - **Member 2:** Automated HPO with **Population-Based Training (PBT)**
+    - **Member 3:** Automated HPO with **Bayesian Training (BOHB)**
 
 3. Run the experiments using your assigned method.
 
@@ -195,12 +198,12 @@ In this workshop, you'll work in **teams of 3 students**. Each group will:
 
 Each member should now navigate to the README for their assigned method:
 
-| Method              | Path                                                               | Instructions                                              |
-|---------------------|--------------------------------------------------------------------|-----------------------------------------------------------|
-| Manual HPO          | [`experiments/manual/`](./experiments/manual/)                     | [Instructions Here](./experiments/manual/README.md)       |
-| ASHA (Ray Tune)     | [`experiments/raytune/asha/`](./experiments/raytune/asha/)         | [Instructions Here](./experiments/raytune/asha/README.md) |
-| PBT (Ray Tune)      | [`experiments/raytune/pbt/`](./experiments/raytune/pbt/)           | [Instructions Here](./experiments/raytune/pbt/README.md)  |
-| Bayesian (Optional) | [`experiments/raytune/bayesian/`](./experiments/raytune/bayesian/) | Coming soon                                               |
+| Method               | Path                                                                         | Instructions                                                            |
+|----------------------|------------------------------------------------------------------------------|-------------------------------------------------------------------------|
+| Manual HPO (pre-run) | [`experiments/manual/`](./experiments/manual/)                               | [Instructions Here](./experiments/manual/readme.md)                     |
+| ASHA (Ray Tune)      | [`experiments/raytune/asha/`](./experiments/raytune/scheduler/asha/)         | [Instructions Here](./experiments/raytune/scheduler/asha/readme.md)     |
+| PBT (Ray Tune)       | [`experiments/raytune/pbt/`](./experiments/raytune/scheduler/pbt/)           | [Instructions Here](./experiments/raytune/scheduler/pbt/readme.md)      |
+| Bayesian (Ray Tune)  | [`experiments/raytune/bayesian/`](./experiments/raytune/scheduler/bayesian/) | [Instructions Here](./experiments/raytune/scheduler/bayesian/README.md) |
 
 ---
 
@@ -211,20 +214,22 @@ Each group must submit the following:
 - [ ] A filled **results table** from each method.
 - [ ] **Quiz answers** from each scheduler's README.
 - [ ] A 5–7 line **comparison** discussing:
-  - Which method found the best configuration?
-  - Which used fewer GPU-hours?
-  - Which was faster overall?
-  - What would you use for real-world tuning?
+    - Which method found the best configuration?
+    - Which used fewer GPU-hours?
+    - Which was faster overall?
+    - What would you use for real-world tuning?
 
 ### Cost Comparison (Fill-in Template)
 
-You can use this format to **summarize and compare results across methods**, and to justify your preferred tuning strategy.
+You can use this format to **summarize and compare results across methods**, and to justify your preferred tuning
+strategy.
 
 | **Run Type**        | **Eval Loss (30 Epochs)** | **Runtime (to find best HP)** | **# GPUs** | **GPU Minutes** | **Cost Ratio (Ray/Manual)** |
 |---------------------|---------------------------|-------------------------------|------------|-----------------|-----------------------------|
-| Manual Best         |                           |                               |            |                 |                             |
+| Manual Best         | 11.7463                   | 177                           | 2          | 354             | 1        (reference)        |
 | Ray Best (ASHA)     |                           |                               |            |                 |                             |
 | Ray Best (PBT)      |                           |                               |            |                 |                             |
 | Ray Best (Bayesian) |                           |                               |            |                 |                             |
 
-> Note: Cost ratio is based on total GPU time consumed to find the best configuration (e.g., `Ray GPU-minutes / Manual GPU-minutes`).
+> Note: Cost ratio is based on total GPU time consumed to find the best configuration (e.g.,
+`Ray GPU-minutes / Manual GPU-minutes`).
