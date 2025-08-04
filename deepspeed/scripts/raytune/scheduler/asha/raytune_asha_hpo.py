@@ -1,4 +1,17 @@
 import os, re, string, torch, numpy as np
+
+import argparse
+
+# --- Argument Parser --------------------------------------------------------
+parser = argparse.ArgumentParser(description="Ray Tune ASHA for BLOOM fine-tuning")
+parser.add_argument("--num_train_epochs", type=int, default=5, help="Number of training epochs")
+parser.add_argument("--deepspeed", type=str, default="./config/ds_config.json", help="Path to DeepSpeed config JSON")
+parser.add_argument("--lr_lower", type=float, default=5e-6, help="Lower bound for learning rate")
+parser.add_argument("--lr_upper", type=float, default=2e-4, help="Upper bound for learning rate")
+parser.add_argument("--per_device_bs_choices", nargs="+", type=int, default=[1, 2], help="Batch size choices per device")
+parser.add_argument("--wd_choices", nargs="+", type=float, default=[0.0, 0.01], help="Weight decay choices")
+
+args_cli = parser.parse_args()
 from datasets import load_dataset
 
 from transformers import (BloomForCausalLM, BloomTokenizerFast,
@@ -155,11 +168,11 @@ def train_loop_per_worker(config):
         save_strategy="no",  # Avoid saving checkpoints per epoch
         learning_rate=config["lr"],  # Sampled by Ray Tune
         per_device_train_batch_size=config["per_device_bs"],
-        num_train_epochs=5,
+        num_train_epochs=args_cli.num_train_epochs,
         bf16=False, fp16=True,  # Mixed precision to save GPU memory
         weight_decay=config["wd"],
         report_to="none",
-        deepspeed="/ibex/user/x_mohameta/distributed/otta/ray/deepspeed/ds_config.json"
+        deepspeed=cli.deepspeed
     )
 
     collator = DataCollatorForSeq2Seq(tok, model=model, label_pad_token_id=-100)
@@ -215,7 +228,7 @@ tuner = tune.Tuner(
             metric="eval_loss",
             mode="min",
             grace_period=1,
-            max_t=5,
+            max_t=cli.num_train_epochs,
             reduction_factor=2
         ),
         num_samples=12,  # Total trials to run
@@ -223,9 +236,9 @@ tuner = tune.Tuner(
     ),
     param_space={  # Hyperparameter search space
         "train_loop_config": {
-            "lr": tune.loguniform(5e-6, 2e-4),
-            "per_device_bs": tune.choice([1, 2]),
-            "wd": tune.choice([0.0, 0.01])
+            "lr": tune.loguniform(args_cli.lr_lower, args_cli.lr_upper),
+            "per_device_bs": tune.choice(args_cli.per_device_bs_choices),
+            "wd": tune.choice(args_cli.wd_choices)
         }
     },
 )

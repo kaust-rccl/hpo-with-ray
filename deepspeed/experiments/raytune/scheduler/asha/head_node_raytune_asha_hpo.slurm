@@ -6,16 +6,23 @@
 #SBATCH --cpus-per-task=4
 #SBATCH --time=00:30:00
 
+# ----------- dynamic HPO ranges from env vars or defaults ---------------------
+: "${LR_LOWER:=5e-6}"
+: "${LR_UPPER:=2e-4}"
+: "${BS_CHOICES:=1 2}"
+: "${WD_CHOICES:=0.0 0.01}"
+
+
 CURRENT_DIR=$(pwd)
 WORKER_DIR=$CURRENT_DIR
 
-cd "$CURRENT_DIR/../../../../"
+cd "$CURRENT_DIR/../../../"
 
 ROOT_DIR=$(pwd)
-SCRIPT_DIR="$ROOT_DIR/scripts/raytune/raytune_asha_scheduler"
+SCRIPT_DIR="$ROOT_DIR/scripts/raytune_hpo/raytune_asha_scheduler"
 DS_CONFIG_DIR="$ROOt_DIR/config"
 
-source /ibex/user/x_mohameta/miniforge/etc/profile.d/conda.sh
+source /ibex/user/$USER/miniforge/etc/profile.d/conda.sh
 conda activate bloom-finetune
 module load cuda/12.4.1
 
@@ -86,12 +93,30 @@ while squeue -n ray_worker_bloom -t PD -h | grep -q . ; do
   echo "Waiting for worker(s) to start"; sleep 20
 done
 
+# Define a cleanup function to cancel workers
+cleanup() {
+  echo "Head job exiting. Cancelling worker jobs..."
+  for id in "${job_ids[@]}"; do
+    if [[ -n "$id" ]]; then
+      scancel "$id"
+    fi
+  done
+}
+# Run cleanup on both success and failure
+trap cleanup EXIT
+
 # ---------- run the Tune driver ----------------------------------------------
 export ip_head
 export head_node_ip
 export redis_password
 echo "Launching script from: $(pwd)"
-python -u "$SCRIPT_DIR/raytune_asha_hpo.py" --deepspeed "$DS_CONFIG_DIR"
+python -u "$SCRIPT_DIR/raytune_asha_hpo_updated.py" \
+	--num_train_epochs 5 \
+	--deepspeed $ROOT_DIR/config/ds_config.json \
+	--lr_lower $LR_LOWER \
+	--lr_upper $LR_UPPER\
+       	--per_device_bs_choices $BS_CHOICES \
+	--wd_choices $WD_CHOICES
 
 # ---------- shutdown ----------------------------------------------------------
 touch shutdown.txt

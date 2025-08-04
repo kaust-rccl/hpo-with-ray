@@ -222,15 +222,24 @@ If either inequality fails, the extra trial will remain **PENDING** until resour
 
 ### Launching the Jobs
 
-1. Make sure you are in the same [directory](./) as this `README`, then navigate to the SLURM script directory:
-    ```commandline
-    cd experiments/raytune_hpo/raytune_asha_scheduler/
-    ```
+1. Make sure you are in the same [directory](./) as this `README`.
 
-2. Submit the ASHA Ray Tune job:
+2. Submit the job using `sbatch`, and optionally override the search space hyperparameters using environment variables:
+
     ```commandline
+    LR_LOWER=1e-5 \
+    LR_UPPER=2e-4 \
+    BS_CHOICES="1 2" \
+    WD_CHOICES="0.0 0.01" \
     sbatch head_node_raytune_asha_hpo.slurm
     ```
+   You can customize the following variables:
+
+    - `LR_LOWER`: Lower bound of learning rate range
+    - `LR_UPPER`: Upper bound of learning rate range
+    - `BS_CHOICES`: Space-separated list of per-device batch sizes
+    - `WD_CHOICES`: Space-separated list of weight decay values
+    - 
 
 3. Monitor the job in the queue:
     ```commandline
@@ -297,15 +306,24 @@ Best Trial Result:
 
 ### Quiz Questions
 
-1. **Compare the Total Job Time vs Trial Runtimes**  
-   - Look at the **Total Job Time** (difference between job start and finish timestamps) and compare it with the **sum of all trial runtimes** in the table.  
-   - **Question:** Why is the total job time **much less** than the accumulated trial times?  
-   
+#### 1. Total Job Time vs. Trial Runtimes
 
-2. **Interpreting the Advantage of ASHA**  
-   - Based on your observation above, explain **why this concurrent, early-stopping setup is better than manual HPO** in terms of:  
-     - **GPU usage efficiency**  
-     - **Total time to find the best configuration**  
-     - **Exploration of different hyperparameter combinations**
+> You run 8 trials in Ray Tune using ASHA. Each trial takes ~20 minutes, but the full job finishes in ~25 minutes. Why is the total job time much **less** than the sum of individual runtimes?
+
+- [ ] A. Ray skips some of the trials  
+- [ ] B. The cluster was underutilized  
+- [ ] C. Trials ran in parallel and bad ones were stopped early  
+- [ ] D. Ray compresses time by batching trial steps
+
+#### 2. Advantages of ASHA vs Manual Tuning
+
+> Compared to manual HPO, what are advantages of using ASHA for hyperparameter optimization?
+
+- [ ] A. It reduces total runtime by running trials concurrently and stopping weak ones early  
+- [ ] B. It allows exploring more hyperparameter combinations in the same time window  
+- [ ] C. It guarantees to find the global best configuration  
+- [ ] D. It trains every trial for the full number of epochs
+
+(*Select all that apply*)
 
 ---
