@@ -129,8 +129,15 @@ code is needed.
 
 ### Environment Setup
 
-<!-- TODO: yml file and instruction -->
+To run the Ray Tune experiments, you'll need a properly configured Conda environment.
 
+### 1. Create the Conda Environment
+
+Make sure you are inside your project directory, then create the environment using the provided `ray.yml` file:
+
+```bash
+conda env create -f ray.yml
+```
 ### Project Structure
 
 This repository is organized into modular directories for code, configuration, and experiments.
