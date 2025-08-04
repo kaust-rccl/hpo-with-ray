@@ -16,14 +16,14 @@
 CURRENT_DIR=$(pwd)
 WORKER_DIR=$CURRENT_DIR
 
-cd "$CURRENT_DIR/../../../"
+cd "$CURRENT_DIR/../../../../"
 
 ROOT_DIR=$(pwd)
-SCRIPT_DIR="$ROOT_DIR/scripts/raytune_hpo/raytune_asha_scheduler"
+SCRIPT_DIR="$ROOT_DIR/scripts/raytune/scheduler/asha"
 DS_CONFIG_DIR="$ROOt_DIR/config"
 
 source /ibex/user/$USER/miniforge/etc/profile.d/conda.sh
-conda activate hpo-raytunetune
+conda activate hpo-raytune
 module load cuda/12.4.1
 
 # ---------- worker count ------------------------------------------------------
@@ -110,7 +110,7 @@ export ip_head
 export head_node_ip
 export redis_password
 echo "Launching script from: $(pwd)"
-python -u "$SCRIPT_DIR/raytune_ahsa_hpo.py" \
+python -u "$SCRIPT_DIR/raytune_asha_hpo.py" \
 	--num_train_epochs 5 \
 	--deepspeed $ROOT_DIR/config/ds_config.json \
 	--lr_lower $LR_LOWER \

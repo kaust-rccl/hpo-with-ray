@@ -172,7 +172,7 @@ def train_loop_per_worker(config):
         bf16=False, fp16=True,  # Mixed precision to save GPU memory
         weight_decay=config["wd"],
         report_to="none",
-        deepspeed=cli.deepspeed
+        deepspeed=args_cli.deepspeed
     )
 
     collator = DataCollatorForSeq2Seq(tok, model=model, label_pad_token_id=-100)
@@ -228,7 +228,7 @@ tuner = tune.Tuner(
             metric="eval_loss",
             mode="min",
             grace_period=1,
-            max_t=cli.num_train_epochs,
+            max_t=args_cli.num_train_epochs,
             reduction_factor=2
         ),
         num_samples=12,  # Total trials to run

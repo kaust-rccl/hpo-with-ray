@@ -1,5 +1,18 @@
 import os, re, string, torch, numpy as np
 
+import argparse
+
+# --- Argument Parser --------------------------------------------------------
+parser = argparse.ArgumentParser(description="Ray Tune ASHA for BLOOM fine-tuning")
+parser.add_argument("--num_train_epochs", type=int, default=5, help="Number of training epochs")
+parser.add_argument("--deepspeed", type=str, default="./config/ds_config.json", help="Path to DeepSpeed config JSON")
+parser.add_argument("--lr_lower", type=float, default=5e-6, help="Lower bound for learning rate")
+parser.add_argument("--lr_upper", type=float, default=2e-4, help="Upper bound for learning rate")
+parser.add_argument("--per_device_bs_choices", nargs="+", type=int, default=[1, 2], help="Batch size choices per device")
+parser.add_argument("--wd_choices", nargs="+", type=float, default=[0.0, 0.01], help="Weight decay choices")
+
+args_cli = parser.parse_args()
+
 # --- Dataset & Transformers Imports -----------------------------------------
 from datasets import load_dataset, disable_caching
 from transformers import (BloomForCausalLM, BloomTokenizerFast,
@@ -106,7 +119,7 @@ def train_loop_per_worker(config):
         output_dir=hf_output_dir,
         learning_rate=config["lr"],
         per_device_train_batch_size=config["per_device_bs"],
-        num_train_epochs=5,
+        num_train_epochs=args_cli.num_train_epochs,
         bf16=False, fp16=True,
         weight_decay=config["wd"],
         report_to="none",
@@ -116,6 +129,7 @@ def train_loop_per_worker(config):
         eval_strategy="steps",
         eval_steps=1000,
         save_only_model=True,
+        deepspeed=args_cli.deepspeed
     )
     collator = DataCollatorForSeq2Seq(tok, model=model, label_pad_token_id=-100)
 
@@ -157,9 +171,9 @@ pbt = PopulationBasedTraining(
     perturbation_interval=2,
     hyperparam_mutations={
         "train_loop_config": {
-            "lr": tune.loguniform(5e-6, 2e-4),
-            "per_device_bs": [1, 2],
-            "wd": [0.0, 0.01]
+            "lr": tune.loguniform(args_cli.lr_lower, args_cli.lr_upper),
+            "per_device_bs": tune.choice(args_cli.per_device_bs_choices),
+            "wd": tune.choice(args_cli.wd_choices)
         }
     },
 )
