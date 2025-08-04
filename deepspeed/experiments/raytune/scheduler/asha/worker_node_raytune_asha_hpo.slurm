@@ -11,7 +11,7 @@
 
 
 source /ibex/user/$USER/miniforge/etc/profile.d/conda.sh
-conda activate bloom-finetune
+conda activate hpo-raytune
 module load cuda/12.4.1
 
 export NUM_CPUS_PER_NODE=${SLURM_CPUS_PER_TASK}

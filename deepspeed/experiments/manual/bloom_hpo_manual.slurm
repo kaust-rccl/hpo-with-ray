@@ -21,7 +21,7 @@ SCRIPT_DIR="$ROOT_DIR/scripts/manual"
 module load cuda/12.4.1                       # Load matching CUDA toolkit
 
 source /ibex/user/$USER/miniforge/etc/profile.d/conda.sh
-conda activate bloom-finetune                 # Activate conda env with HF + DeepSpeed
+conda activate hpo-raytune                 # Activate conda env with HF + DeepSpeed
 
 # ───────────────────────────── HYPER-PARAM GRID ─────────────────────────────
 #   Iterate over every combination of learning-rate (LR), batch-size (BS),

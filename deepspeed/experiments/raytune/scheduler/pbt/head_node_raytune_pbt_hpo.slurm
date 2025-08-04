@@ -23,7 +23,7 @@ SCRIPT_DIR="$ROOT_DIR/scripts/raytune_hpo/raytune_asha_scheduler"
 DS_CONFIG_DIR="$ROOt_DIR/config"
 
 source /ibex/user/$USER/miniforge/etc/profile.d/conda.sh
-conda activate bloom-finetune
+conda activate hpo-raytunetune
 module load cuda/12.4.1
 
 # ---------- worker count ------------------------------------------------------
