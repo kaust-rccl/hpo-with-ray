@@ -10,7 +10,7 @@
 #SBATCH --constraint=v100
 
 
-source /ibex/user/x_mohameta/miniforge/etc/profile.d/conda.sh
+source /ibex/user/$USER/miniforge/etc/profile.d/conda.sh
 conda activate bloom-finetune
 module load cuda/12.4.1
 

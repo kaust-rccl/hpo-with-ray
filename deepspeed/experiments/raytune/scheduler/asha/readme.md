@@ -306,24 +306,17 @@ Best Trial Result:
 
 ### Quiz Questions
 
-#### 1. Total Job Time vs. Trial Runtimes
+1. **What does the `perturbation_interval` in PBT control?**  
+   - A. How often checkpoints are saved  
+   - B. The number of epochs to train  
+   - C. The interval between hyperparameter tuning runs  
+   - D. How often to exploit and explore new hyperparameter configurations
+   
 
-> You run 8 trials in Ray Tune using ASHA. Each trial takes ~20 minutes, but the full job finishes in ~25 minutes. Why is the total job time much **less** than the sum of individual runtimes?
-
-- [ ] A. Ray skips some of the trials  
-- [ ] B. The cluster was underutilized  
-- [ ] C. Trials ran in parallel and bad ones were stopped early  
-- [ ] D. Ray compresses time by batching trial steps
-
-#### 2. Advantages of ASHA vs Manual Tuning
-
-> Compared to manual HPO, what are advantages of using ASHA for hyperparameter optimization?
-
-- [ ] A. It reduces total runtime by running trials concurrently and stopping weak ones early  
-- [ ] B. It allows exploring more hyperparameter combinations in the same time window  
-- [ ] C. It guarantees to find the global best configuration  
-- [ ] D. It trains every trial for the full number of epochs
-
-(*Select all that apply*)
+2. **Why does each trial in PBT require checkpointing?**  
+   - A. So it can resume from the beginning if preempted  
+   - B. So weaker trials can be restarted from stronger trial weights  
+   - C. To save GPU memory  
+   - D. To enable TensorBoard logging  
 
 ---
