@@ -5,10 +5,13 @@ channels:
 dependencies:
   # Core conda packages
   - python=3.10
+  - mpi=1.0.1=mpich
+  - mpich=4.3.0=h1a8bee6_100
+  - mpi4py=4.0.3=py310h9226088_101
   - pip
   - setuptools
   - wheel
-  - numpy  # Conda will replace this with optimized build if available
+  - numpy<2.0.0  # Conda will replace this with optimized build if available
   - bzip2
   - ca-certificates
   - libffi
@@ -111,3 +114,5 @@ dependencies:
       - urllib3==2.3.0
       - xxhash==3.5.0
       - yarl==1.18.3
+      - hpbandster==0.7.4
+      - ConfigSpace==0.4.21

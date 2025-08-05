@@ -1,6 +1,7 @@
 import os, re, string, torch, numpy as np
 
 import argparse
+import sys
 
 # --- Argument Parser --------------------------------------------------------
 parser = argparse.ArgumentParser(description="Ray Tune ASHA for BLOOM fine-tuning")
@@ -29,9 +30,10 @@ from ray.tune.search.optuna import OptunaSearch
 from ray.tune.schedulers import PopulationBasedTraining
 
 # --- Experiment Constants ---------------------------------------------------
+user = os.getenv("USER")
 MODEL_NAME = "bigscience/bloomz-560m"
 EXPERIMENT_NAME = "bloom_fsdp_tune"
-STORAGE_PATH = "/ibex/user/x_mohameta"
+STORAGE_PATH = f"/ibex/user/{user}"
 OUTPUT_DIR_BASE = os.path.join(STORAGE_PATH, EXPERIMENT_NAME)
 HF_CHKPT = os.path.join(OUTPUT_DIR_BASE, "hf")
 RAY_CHKPT = os.path.join(OUTPUT_DIR_BASE, "ray")

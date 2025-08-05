@@ -136,7 +136,7 @@ To run the Ray Tune experiments, you'll need a properly configured Conda environ
 Make sure you are inside your project directory, then create the environment using the provided `ray.yml` file:
 
 ```bash
-conda env create -f ray.yml
+conda env create -f environment/hpo-raytune.yml
 ```
 ### Project Structure
 
