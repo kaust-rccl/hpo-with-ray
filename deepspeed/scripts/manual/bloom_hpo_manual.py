@@ -33,6 +33,7 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--lr",  type=float, required=True, help="Learning rate")
     p.add_argument("--bs",  type=int,   required=True, help="Per-GPU batch size")
     p.add_argument("--wd",  type=float, required=True, help="Weight decay")
+    p.add_argument("--deepspeed", type=str, required=True, default="./config/ds_config.json", help="Path to DeepSpeed config JSON")
     return p.parse_args()
 
 # ─────────────────────── Dataset Loading & Preprocessing ───────────────────────
@@ -186,7 +187,7 @@ def main():
         fp16=True,
         bf16=False,
         report_to="none",
-        deepspeed="/ibex/user/x_mohameta/distributed/otta/ray/deepspeed/ds_config.json"
+        deepspeed=args.deepspeed
     )
 
     trainer = Trainer(

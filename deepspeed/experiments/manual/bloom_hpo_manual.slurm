@@ -5,7 +5,7 @@
 #SBATCH --nodes=1                             # Single node (all GPUs local)
 #SBATCH --gpus-per-node=2                     # 2 × V100 GPUs
 #SBATCH --cpus-per-task=6                     # 6 logical CPUs for the job
-#SBATCH --time=08:00:00                       # Wall-clock limit (fits 12 runs × 5 epochs)
+#SBATCH --time=03:00:00                       # Wall-clock limit (fits 12 runs × 5 epochs)
 #SBATCH --constraint=v100                     # Only schedule on V100 partition
 #SBATCH --mem=256G                            # System RAM reservation
 
@@ -16,7 +16,7 @@ cd "$CURRENT_DIR/../../"
 
 ROOT_DIR=$(pwd)
 SCRIPT_DIR="$ROOT_DIR/scripts/manual"
-
+CONFIG_DIR="$ROOT_DIR/config"
 # ──────────────────────────── ENVIRONMENT SETUP ─────────────────────────────
 module load cuda/12.4.1                       # Load matching CUDA toolkit
 
@@ -49,7 +49,8 @@ for lr in "${LRs[@]}"; do
         "$SCRIPT_DIR/bloom_hpo_manual.py" \
           --lr "$lr" \
           --bs "$bs" \
-          --wd "$wd"
+          --wd "$wd" \
+	  --deepspeed "$CONFIG_DIR/ds_config.json"
       echo "── combo finished ──"
     done
   done
