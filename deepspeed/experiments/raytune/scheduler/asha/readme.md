@@ -143,6 +143,7 @@ logging — but with key adjustments to enable **distributed and concurrent tria
     - Allocates full node resources (e.g., 8 × V100 GPUs per worker) instead of the **2 GPUs per trial** setup in the
       manual run.
 
+> You **only submit the head node job**; it manages the workers.
 
 - **Resource Allocation Philosophy:**
     - Manual HPO isolates resources **per trial** by running one after another.
@@ -303,17 +304,14 @@ Best Trial Result:
 
 ### Quiz Questions
 
-1. **What does the `perturbation_interval` in PBT control?**  
-   - A. How often checkpoints are saved  
-   - B. The number of epochs to train  
-   - C. The interval between hyperparameter tuning runs  
-   - D. How often to exploit and explore new hyperparameter configurations
+1. **Compare the Total Job Time vs Trial Runtimes**  
+   - Look at the **Total Job Time** (difference between job start and finish timestamps) and compare it with the **sum of all trial runtimes** in the table.  
+   - **Question:** Why is the total job time **much less** than the accumulated trial times?  
    
 
-2. **Why does each trial in PBT require checkpointing?**  
-   - A. So it can resume from the beginning if preempted  
-   - B. So weaker trials can be restarted from stronger trial weights  
-   - C. To save GPU memory  
-   - D. To enable TensorBoard logging  
-
+2. **Interpreting the Advantage of ASHA**  
+   - Based on your observation above, explain **why this concurrent, early-stopping setup is better than manual HPO** in terms of:  
+     - **GPU usage efficiency**  
+     - **Total time to find the best configuration**  
+     - **Exploration of different hyperparameter combinations**
 ---
