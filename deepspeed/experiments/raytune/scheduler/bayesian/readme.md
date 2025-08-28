@@ -100,7 +100,7 @@ cd experiments/raytune_hpo/raytune_bayesian/
     LR_UPPER=2e-4 \
     BS_CHOICES="1 2" \
     WD_CHOICES="0.0 0.01" \
-    sbatch head_node_raytune_asha_hpo.slurm
+    sbatch head_node_raytune_bayesian_hpo.slurm
     ```
    You can customize the following variables:
 
