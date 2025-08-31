@@ -240,3 +240,5 @@ strategy.
 
 > Note: Cost ratio is based on total GPU time consumed to find the best configuration (e.g.,
 `Ray GPU-minutes / Manual GPU-minutes`).
+
+> Note: ⚠️  Do not run multiple experiments simultaneously in parallel. This may cause job failures.
