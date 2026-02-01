@@ -1,5 +1,6 @@
 #!/bin/bash
-#SBATCH --job-name=ray_worker_bloom
+#SBATCH --job-name=pbt_worker
+#SBACTH --reservation=distributedHPO
 #SBATCH --output=logs/%x-%j.out
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
@@ -10,9 +11,7 @@
 #SBATCH --constraint=v100
 
 
-source /ibex/user/$USER/miniforge/etc/profile.d/conda.sh
-conda activate hpo-raytune
-module load cuda/12.4.1
+module load /sw/rl9g/dl/workshop/modules/hpo-ray
 
 export NUM_CPUS_PER_NODE=${SLURM_CPUS_PER_TASK}
 export NUM_GPUS_PER_NODE=${SLURM_GPUS_PER_NODE}

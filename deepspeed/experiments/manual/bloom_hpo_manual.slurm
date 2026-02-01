@@ -1,7 +1,8 @@
 #!/bin/bash
 # ───────────────────────────── SLURM DIRECTIVES ─────────────────────────────
 #SBATCH --job-name=bloom_hpo_serial_5_epochs   # Job name in queue
-#SBATCH --output=logs/%x-%j.out               # Stdout/stderr path: logs/<job>-<id>.out
+#SBACTH --reservation=distributedHPO
+#SBATCH --output=logs/%x-%j.out
 #SBATCH --nodes=1                             # Single node (all GPUs local)
 #SBATCH --gpus-per-node=2                     # 2 × V100 GPUs
 #SBATCH --cpus-per-task=6                     # 6 logical CPUs for the job

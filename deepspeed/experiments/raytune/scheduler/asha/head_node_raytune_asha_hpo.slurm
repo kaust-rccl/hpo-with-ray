@@ -1,5 +1,6 @@
 #!/bin/bash
-#SBATCH --job-name=ray_head_bloom_5epochs
+#SBATCH --job-name=asha_head
+#SBACTH --reservation=distributedHPO
 #SBATCH --output=logs/%x-%j.out
 #SBATCH --ntasks=1
 #SBATCH --tasks-per-node=1
@@ -22,9 +23,7 @@ ROOT_DIR=$(pwd)
 SCRIPT_DIR="$ROOT_DIR/scripts/raytune/scheduler/asha"
 DS_CONFIG_DIR="$ROOt_DIR/config"
 
-source /ibex/user/$USER/miniforge/etc/profile.d/conda.sh
-conda activate hpo-raytune
-module load cuda/12.4.1
+module load /sw/rl9g/dl/workshop/modules/hpo-ray
 
 # ---------- worker count ------------------------------------------------------
 : "${NUM_WORKERS:=1}"     # export NUM_WORKERS before sbatch to change
