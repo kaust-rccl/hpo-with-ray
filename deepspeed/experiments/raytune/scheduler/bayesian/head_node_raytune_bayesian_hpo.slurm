@@ -17,9 +17,8 @@
 CURRENT_DIR=$(pwd)
 WORKER_DIR=$CURRENT_DIR
 
-cd "$CURRENT_DIR/../../../../"
 
-ROOT_DIR=$(pwd)
+ROOT_DIR="$( cd "$CURRENT_DIR/../../../../" && pwd )"
 SCRIPT_DIR="$ROOT_DIR/scripts/raytune/scheduler/bayesian"
 DS_CONFIG_DIR="$ROOt_DIR/config"
 
