@@ -95,7 +95,7 @@ python -u "$SCRIPT_DIR/raytune_bayesian_hpo.py" \
 	--deepspeed $ROOT_DIR/config/ds_config.json \
 	--lr_lower $LR_LOWER \
 	--lr_upper $LR_UPPER\
-       	--per_device_bs_choices $BS_CHOICES \
+  --per_device_bs_choices $BS_CHOICES \
 	--wd_choices $WD_CHOICES
 
 # ---------- shutdown ----------------------------------------------------------

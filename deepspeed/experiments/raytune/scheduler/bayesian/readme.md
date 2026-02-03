@@ -84,8 +84,9 @@ Imagine a **chef experimenting with recipes**:
 This makes BOHB **smarter than ASHA** when compute budget is limited.
 
 ---
+## Exercise: Launch, Track, and Analyze
 
-## Running the Experiment
+### Launching the Jobs
 
 1. Navigate to the experiment folder:
 
