@@ -44,25 +44,10 @@ print(s.getsockname()[1])
 s.close()
 PY
 )
-export tensorboard_port=$(python - <<'PY'
-import socket
-s = socket.socket()
-s.bind(('', 0))
-print(s.getsockname()[1])
-s.close()
-PY
-)
 
 export node=$(/bin/hostname -s)
-echo "
-SSH-tunnel for the Ray dashboard:
-  ssh -L localhost:${dashboard_port}:${node}:${dashboard_port} \\
-      -L localhost:${tensorboard_port}:${node}:${tensorboard_port} \\
-      ${USER}@glogin.ibex.kaust.edu.sa
-"
 
 # ---------- scratch dirs -----------------------------------------------------
-export TB_TMPDIR=$PWD/tboard/${SLURM_JOBID}; mkdir -p $TB_TMPDIR
 
 export redis_password=${SLURM_JOBID}
 export head_node_ip=$(hostname -I | awk '{print $2}')
@@ -74,9 +59,6 @@ ray start --node-ip-address ${head_node_ip} --port ${server_port} \
           --redis-password=${redis_password} --head \
           --dashboard-port ${dashboard_port} --dashboard-host=127.0.0.1 \
           --num-cpus $SLURM_CPUS_PER_TASK  --num-gpus 0 --block &
-
-tensorboard --logdir=${PWD}/logs/${SLURM_JOBID} \
-            --port=${tensorboard_port} &
 
 sleep 20
 
