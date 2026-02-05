@@ -11,7 +11,8 @@
 #SBATCH --constraint=v100
 
 
-module load /sw/rl9g/dl/workshop/modules/hpo-ray
+# --- ENVIRONMENT SETUP ---
+module load dl-workshops hpo-ray
 
 export NUM_CPUS_PER_NODE=${SLURM_CPUS_PER_TASK}
 export NUM_GPUS_PER_NODE=${SLURM_GPUS_PER_NODE}

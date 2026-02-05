@@ -22,7 +22,8 @@ ROOT_DIR="$( cd "$CURRENT_DIR/../../../../" && pwd )"
 SCRIPT_DIR="$ROOT_DIR/scripts/raytune/scheduler/asha"
 DS_CONFIG_DIR="$ROOt_DIR/config"
 
-module load /sw/rl9g/dl/workshop/modules/hpo-ray
+# --- ENVIRONMENT SETUP ---
+module load dl-workshops hpo-ray
 
 # ---------- worker count ------------------------------------------------------
 : "${NUM_WORKERS:=1}"     # export NUM_WORKERS before sbatch to change
