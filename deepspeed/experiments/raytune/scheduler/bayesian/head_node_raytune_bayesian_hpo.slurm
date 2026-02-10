@@ -1,5 +1,6 @@
 #!/bin/bash
-#SBATCH --job-name=ray_head_bloom_5epochs
+#SBATCH --job-name=bayesian_head
+#SBACTH --reservation=distributedHPO
 #SBATCH --output=logs/%x-%j.out
 #SBATCH --ntasks=1
 #SBATCH --tasks-per-node=1
@@ -16,15 +17,13 @@
 CURRENT_DIR=$(pwd)
 WORKER_DIR=$CURRENT_DIR
 
-cd "$CURRENT_DIR/../../../../"
 
-ROOT_DIR=$(pwd)
+ROOT_DIR="$( cd "$CURRENT_DIR/../../../../" && pwd )"
 SCRIPT_DIR="$ROOT_DIR/scripts/raytune/scheduler/bayesian"
 DS_CONFIG_DIR="$ROOt_DIR/config"
 
-source /ibex/user/$USER/miniforge/etc/profile.d/conda.sh
-conda activate hpo-raytune
-module load cuda/12.4.1
+# --- ENVIRONMENT SETUP ---
+module load dl-workshops hpo-ray
 
 # ---------- worker count ------------------------------------------------------
 : "${NUM_WORKERS:=1}"     # export NUM_WORKERS before sbatch to change
@@ -46,25 +45,10 @@ print(s.getsockname()[1])
 s.close()
 PY
 )
-export tensorboard_port=$(python - <<'PY'
-import socket
-s = socket.socket()
-s.bind(('', 0))
-print(s.getsockname()[1])
-s.close()
-PY
-)
 
 export node=$(/bin/hostname -s)
-echo "
-SSH-tunnel for the Ray dashboard:
-  ssh -L localhost:${dashboard_port}:${node}:${dashboard_port} \\
-      -L localhost:${tensorboard_port}:${node}:${tensorboard_port} \\
-      ${USER}@glogin.ibex.kaust.edu.sa
-"
 
 # ---------- scratch dirs -----------------------------------------------------
-export TB_TMPDIR=$PWD/tboard/${SLURM_JOBID}; mkdir -p $TB_TMPDIR
 
 export redis_password=${SLURM_JOBID}
 export head_node_ip=$(hostname -I | awk '{print $2}')
@@ -76,9 +60,6 @@ ray start --node-ip-address ${head_node_ip} --port ${server_port} \
           --redis-password=${redis_password} --head \
           --dashboard-port ${dashboard_port} --dashboard-host=127.0.0.1 \
           --num-cpus $SLURM_CPUS_PER_TASK  --num-gpus 0 --block &
-
-tensorboard --logdir=${PWD}/logs/${SLURM_JOBID} \
-            --port=${tensorboard_port} &
 
 sleep 20
 
@@ -115,7 +96,7 @@ python -u "$SCRIPT_DIR/raytune_bayesian_hpo.py" \
 	--deepspeed $ROOT_DIR/config/ds_config.json \
 	--lr_lower $LR_LOWER \
 	--lr_upper $LR_UPPER\
-       	--per_device_bs_choices $BS_CHOICES \
+  --per_device_bs_choices $BS_CHOICES \
 	--wd_choices $WD_CHOICES
 
 # ---------- shutdown ----------------------------------------------------------
